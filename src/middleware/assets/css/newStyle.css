@@ -1,0 +1,96 @@
+#pagecontent{
+  background-color:white;
+}
+
+
+#aimaxlogo{
+    width: 150px;
+     height: 40px; 
+    /* float: right;
+    margin-left: 20px; */
+}
+
+#profileLogo{
+    width: 25px;
+    /* float: right; */
+}
+
+#sidebar{
+
+    background-color: orange;
+}
+#sidebarlist{
+    color: white;
+}
+
+
+
+  #speedmeter{
+    width: 25px;
+  }
+
+  #sidebarDashboard{
+    font-weight: bold;
+  }
+
+  .wrapper {
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.main-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 90vh;
+    display: flex;
+}
+
+#bodyheadertxt{
+  color: gray;
+}
+
+#bodyheadertxt:hover{
+  color: orange;
+}
+#bodyheadertxt:active{
+  color: orange;
+}
+
+#bodyheader1{
+  background-color:#80808008;
+}
+
+#maincontainer{
+  padding: 0 0 0 0;
+}
+
+#sidebarDashboard:hover{
+  background-color:#3c0008c4;
+}
+
+#view_graph{
+  color: orange;
+  text-decoration: none;
+  float: right;
+}
+ #sidebarDashboard1{
+    font-weight: bold;
+    font-size: 85%;
+  }
+  #sidebarDashboard1:hover{
+    background-color:#3c0008c4;
+  }
+
+
+ #header1{
+
+    height: 80px;
+
+  }
+  #user_icon{
+    float: right;
+  }
+ 
+  .active_color{
+    color: orange !important;
+  }

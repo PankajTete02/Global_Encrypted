@@ -1,0 +1,47 @@
+:root {
+    --color-orange1:#F78C12;  
+    --color-red1:rgb(212, 12, 12);
+}
+
+
+#userimg{
+    width: 22px;
+     height:21px;
+     margin-bottom: 12px;
+}
+#exportcolmd{
+    text-align: right;
+}
+#exportbtn{
+    background-color: var(--color-orange1);
+}
+#addredbtn{
+    background-color:var(--color-red1);
+}
+#btncolor{
+    background-color: var(--color-orange1);
+    height:36px;
+}
+
+
+.careticon{
+    display: inline-grid;
+}
+#uppercard{
+    margin-top: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0px 2px rgb(199, 195, 195);
+}
+/* #orangeline{
+    color: var(--color-orange1);
+} */
+#inputsearch{
+    height:36px
+}
+#outermargin{
+    margin-bottom: 20px;
+}
+#hamburgericon{
+    width: 14px;
+     height: 14px;
+}

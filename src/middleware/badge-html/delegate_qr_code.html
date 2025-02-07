@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Meeting Request</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      .mq {
+        width: 710px;
+      }
+
+      /* Extra small devices (phones, 600px and down) */
+      @media only screen and (max-width: 600px) {
+        .mq {
+          width: 300px;
+        }
+        .mqfont {
+          font-size: 16px;
+        }
+      }
+
+      /* Small devices (portrait tablets and large phones, 600px and up) */
+      @media only screen and (min-width: 600px) {
+        .mq {
+          width: 300px;
+        }
+      }
+
+      /* Medium devices (landscape tablets, 768px and up) */
+      @media only screen and (min-width: 768px) {
+        .mq {
+          width: 710px;
+        }
+      }
+
+      /* Large devices (laptops/desktops, 992px and up) */
+      @media only screen and (min-width: 992px) {
+        .mq {
+          width: 710px;
+        }
+      }
+
+      /* Extra large devices (large laptops and desktops, 1200px and up) */
+      @media only screen and (min-width: 1200px) {
+        .mq {
+          width: 710px;
+        }
+      }
+      .mqimg {
+        width: 100px !important;
+      }
+      .mqimg1 {
+        width: 100px !important;
+      }
+      .mqimg1 {
+        width: 100px !important;
+      }
+    </style>
+  </head>
+  <body style="padding: 0px; margin: 0px">
+    <table
+      width="100%"
+      border="0"
+      cellspacing="0"
+      cellpadding="0"
+      align="center"
+      style="
+        font-family: Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      "
+    >
+      <tbody>
+        <tr>
+          <td>
+            <table
+              width="710"
+              border="0"
+              cellspacing="0"
+              cellpadding="5"
+              align="center"
+            >
+            <tbody>
+              <tr>
+                <td style="padding: 0;">
+    <img src="https://devglobaljusticeapis.cylsys.com/uploads/head.png" alt="head.png" width="100%">
+  </td>
+              </tr>
+            </tbody>
+          </table>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table
+              width="710"
+              border="0"
+              cellspacing="0"
+              cellpadding="5"
+              align="center"
+              style="
+                background: linear-gradient(180deg, #bdc78c2e 0%, #bdc78c 100%);
+              "
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <table style="padding: 0 50px">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <table
+                              width="100%"
+                              border="0"
+                              cellspacing="0"
+                              cellpadding="0"
+                            >
+                              <tbody>
+                                <tr>
+                                  <td
+                                    style="
+                                      font-size: 18px;
+                                      line-height: 25px;
+                                      font-family: Gotham, 'Helvetica Neue',
+                                        Helvetica, Arial, sans-serif;
+                                    "
+                                  >
+                                    <p><b>Hi {{name}},</b></p>
+                                    <p
+                                      style="
+                                        font-size: 14px;
+                                        font-weight: 500;
+                                        line-height: 22px;
+                                        text-align: left;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                      "
+                                    >
+                                      Thank you for joining the movement for
+                                      Global Justice, Love and Peace. Attached
+                                      is your unique QR code, which unlocks
+                                      exciting benefits for you.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table
+                              width="100%"
+                              border="0"
+                              cellspacing="0"
+                              cellpadding="0"
+                              style="padding: 0"
+                            >
+                              <tbody>
+                                <tr>
+                                  <td align="center">
+                                    <img
+                                      src="qr_code.png"
+                                      alt=""
+                                      style="width: 50%"
+                                    />
+                                  </td>
+                                  <td align="center">
+                                    <button
+                                      style="
+                                        background: #128940;
+                                        width: 193px;
+                                        height: 43px;
+                                        top: 425px;
+                                        left: 367px;
+                                        gap: 0px;
+                                        border-radius: 5px;
+                                        border: none;
+                                        opacity: 0px;
+                                        color: #fff;
+                                        box-shadow: 0px 0px 5px 1px #12894066;
+                                        cursor: pointer;
+                                      "
+                                    >
+                                      Download QR Code
+                                    </button>
+                                    <br />
+                                    <br />
+                                    <img src="cid:qrCodeImage" alt="QR Code" style="width:200px; height:200px;" />
+
+                                    <p
+                                      style="
+                                        font-size: 12px;
+                                        font-weight: 400;
+                                        text-align: center;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                      "
+                                    >
+                                      Alternatively you can click
+                                      <a
+                                        style="
+                                          color: #148ad6;
+                                          text-decoration: none;
+                                        "
+                                        href="http://"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >
+                                        {{coupon_code}}
+                                        </a
+                                      >
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table
+                              width="100%"
+                              border="0"
+                              cellspacing="0"
+                              cellpadding="0"
+                            >
+                              <tbody>
+                                <tr>
+                                  <td>
+                                    <ul
+                                      style="
+                                        font-size: 12px;
+                                        font-weight: 400;
+                                        line-height: 30px;
+                                        text-align: left;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                        padding: 0;
+                                      "
+                                    >
+                                      <li>
+                                        Your Benefit: Enjoy a 7% discount on
+                                        your own registration when using this QR
+                                        code.
+                                      </li>
+                                      <li>
+                                        Your Reward: Earn a 7% incentive for
+                                        every successful registration completed
+                                        through your QR code.
+                                      </li>
+                                      <li>
+                                        Share your QR code widely with those who
+                                        align with our mission, and let’s create
+                                        a ripple effect of justice, love, and
+                                        peace together.
+                                      </li>
+                                    </ul>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td
+                                    style="
+                                      font-size: 14px;
+                                      font-weight: 500;
+                                      line-height: 22px;
+                                      text-align: left;
+                                      text-underline-position: from-font;
+                                      text-decoration-skip-ink: none;
+                                    "
+                                  >
+                                    <br /><br />
+                                    Looking forward to welcoming you to Dubai on
+                                    13th April 2025.
+                                    <br /><br />
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <p
+                                      style="
+                                        font-size: 14px;
+                                        font-weight: 400;
+                                        line-height: 22px;
+                                        text-align: left;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                        margin: 0;
+                                      "
+                                    >
+                                      Warm regards,
+                                    </p>
+                                    <p
+                                      style="
+                                        font-size: 14px;
+                                        font-weight: 600;
+                                        line-height: 22px;
+                                        text-align: left;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                        margin: 0;
+                                        color: #005a93;
+                                      "
+                                    >
+                                      The Global Justice, Love & Peace Summit
+                                      Team
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <br /><br />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table
+                      width="100%"
+                      border="0"
+                      cellspacing="0"
+                      cellpadding="0"
+                      style="
+                        border-top: 1px solid #fff;
+                        border-bottom: 1px solid #fff;
+                      "
+                    >
+                      <tbody>
+                        <tr>
+                          <td>
+                            <table width="100%">
+                              <tbody>
+                                <tr>
+                                  <td align="center">
+                                    <p
+                                      style="
+                                        font-size: 10px;
+                                        font-weight: 400;
+                                        line-height: 18px;
+                                        text-align: center;
+                                        text-underline-position: from-font;
+                                        text-decoration-skip-ink: none;
+                                      "
+                                    >
+                                      For any assistance or support, please
+                                      reach out to us at
+                                      <a
+                                        style="color: #0573ba"
+                                        href="mailto:help@justice-love-peace.com"
+                                        >help@justice-love-peace.com</a
+                                      >
+                                      <br />
+                                      Explore more on our website:
+                                      <a
+                                        style="color: #0573ba"
+                                        href="www.justice-love-peace.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >www.justice-love-peace.com</a
+                                      >
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <table width="100%" style="padding: 1rem 12rem">
+                              <tbody>
+                                <tr>
+                                  <td align="center">
+                                    <a
+                                      href="https://www.instagram.com/globaljusticelovepeacesummit/
+                                              "
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      ><img
+                                        src="https://www.justice-love-peace.com/assets/UIComponents/images/insta.svg"
+                                        alt=""
+                                    /></a>
+                                  </td>
+                                  <td align="center">
+                                    <a
+                                      _ngcontent-iqa-c29=""
+                                      href="https://www.facebook.com/GlobalJusticeLoveandPeaceSummit
+                          "
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      ><img
+                                        _ngcontent-iqa-c29=""
+                                        src="https://www.justice-love-peace.com/assets/UIComponents/images/fb.svg"
+                                        alt=""
+                                    /></a>
+                                  </td>
+                                  <td align="center">
+                                    <a
+                                      _ngcontent-iqa-c29=""
+                                      href="https://www.youtube.com/@GlobalJusticeLovePeaceSummit/videos"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      ><img
+                                        _ngcontent-iqa-c29=""
+                                        src="https://www.justice-love-peace.com/assets/UIComponents/images/youtube.svg"
+                                        alt=""
+                                    /></a>
+                                  </td>
+                                  <td align="center">
+                                    <a
+                                      _ngcontent-iqa-c29=""
+                                      href="https://wa.me/+91 9324064978"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      ><img
+                                        _ngcontent-iqa-c29=""
+                                        src="https://www.justice-love-peace.com/assets/UIComponents/images/whatsApp.svg"
+                                        alt=""
+                                    /></a>
+                                  </td>
+                                  <td align="center">
+                                    <a
+                                      _ngcontent-iqa-c29=""
+                                      href="https://www.linkedin.com/company/global-justice-love-peace-summit-2025/posts/?feedView=all"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      ><img
+                                        _ngcontent-iqa-c29=""
+                                        src="https://www.justice-love-peace.com/assets/UIComponents/images/linkedIn.svg"
+                                        alt=""
+                                    /></a>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td
+                            align="center"
+                            style="
+                              font-size: 10px;
+                              font-weight: 400;
+                              line-height: 12.88px;
+                              text-align: center;
+                              text-underline-position: from-font;
+                              text-decoration-skip-ink: none;
+                            "
+                          >
+                            © 2025 Global Justice, Love & Peace Summit. All
+                            rights reserved.
+                            <br />
+                            <br />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            align="center"
+                            style="
+                              font-size: 10px;
+                              font-weight: 400;
+                              line-height: 12.88px;
+                              text-align: center;
+                              text-underline-position: from-font;
+                              text-decoration-skip-ink: none;
+                            "
+                          >
+                            You are receiving this message because you
+                            registered to join the movement for Global Justice,
+                            Love, and <br />
+                            Peace. By signing up, you agreed to our Terms of Use
+                            and Privacy Policies.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            align="center"
+                            style="
+                              font-size: 10px;
+                              font-weight: 400;
+                              line-height: 12.88px;
+                              text-align: center;
+                              text-underline-position: from-font;
+                              text-decoration-skip-ink: none;
+                            "
+                          >
+                            <ul
+                              style="
+                                display: flex;
+                                padding: 0;
+                                justify-content: space-between;
+                              "
+                            >
+                              <li>
+                                <a
+                                  style="color: #333333"
+                                  href="https://www.justice-love-peace.com/accessibility"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Accessibility</a
+                                >
+                              </li>
+                              <li>
+                                <a
+                                  style="color: #333333"
+                                  href="https://www.justice-love-peace.com/privacy-policy"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Privacy policy</a
+                                >
+                              </li>
+                              <li>
+                                <a
+                                  style="color: #333333"
+                                  href="https://www.justice-love-peace.com/cookie-policy"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Cookie Policy</a
+                                >
+                              </li>
+                              <li>
+                                <a
+                                  style="color: #333333"
+                                  href="https://www.justice-love-peace.com/terms-of-use"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Terms of use</a
+                                >
+                              </li>
+                              <li>
+                                <a
+                                  style="color: #333333"
+                                  href="https://www.justice-love-peace.com/visitor-terms-conditions"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  >Visitor Terms and Conditions</a
+                                >
+                              </li>
+                            </ul>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
