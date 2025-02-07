@@ -24,7 +24,6 @@ router.post('/create_session_stripe', peacekeeperController.session_status);
 router.get('/getAllpeacekeeperDropdown', peacekeeperController.getAllPeacekeeperDropdown);
 
 
-
 // router.post('/amb_badge', peacekeeperController.amb_badge);
 
 module.exports = router;

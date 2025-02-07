@@ -70,11 +70,11 @@ const createPeacekeeper = (req, res) => {
         errorMessage: err.message
       });
     }
-
+ 
     const { full_name, country, email_id, dob, mobile_number, country_code, Check_email, url, is_active } = req.body;
-
+ 
     const errors = [];
-
+ 
     // Required fields validation
     const requiredFields = ["full_name", "email_id", "mobile_number", "dob"];
     requiredFields.forEach(field => {
@@ -82,18 +82,19 @@ const createPeacekeeper = (req, res) => {
             errors.push(`${field} is required`);
         }
     });
-    
+   
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email_id && !emailRegex.test(email_id)) {
         errors.push("Invalid email format");
     }
-    
-    // Validate mobile number (only digits)    
-	if (mobile_number && !/^\+\d{1,3} \d+$/.test(mobile_number.trim())) {
+   
+    // Validate mobile number (only digits)
+    if (mobile_number.trim() && !/^\+\d{1,6} \d+$/.test(mobile_number.trim())) {
       errors.push("Mobile number should start with a country code (e.g., +91), contain a space, followed by digits without spaces or special characters");
   }
-    
+ 
+   
     // Validate DOB (YYYY-MM-DD format and a past date)
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (dob) {
@@ -107,7 +108,7 @@ const createPeacekeeper = (req, res) => {
             }
         }
     }
-
+ 
     if (errors.length > 0) {
       return res.status(400).json({
           success: false,
@@ -115,12 +116,12 @@ const createPeacekeeper = (req, res) => {
           message: errors[0] // Returning only the first validation error
       });
   }
-
+ 
     // If file upload is successful, the file information will be available in `req.file`
     const file_name = req.file ? req.file.filename : null;  // File name (e.g., "profilepic-12345.jpg")
     const file_path = req.file ? req.file.filename : null;  // Only store the file name and extension
     const file_type = req.file ? req.file.mimetype : null;   // File type (e.g., "image/jpeg")
-
+ 
     const peacekeeperData = {
       full_name,
       country,
@@ -135,7 +136,7 @@ const createPeacekeeper = (req, res) => {
       url,
       is_active
     };
-
+ 
     // Call the model function to insert the peacekeeper data
     peacekeeperModel.insertPeacekeeper(peacekeeperData, async (err, response) => {
       if (err) {
@@ -146,7 +147,7 @@ const createPeacekeeper = (req, res) => {
           errorMessage: err.message
         });
       }
-
+ 
       // Handle response from the stored procedure
       if (response[0].response === "fail") {
         return res.status(400).json({
@@ -161,38 +162,38 @@ const createPeacekeeper = (req, res) => {
           message: "Mobile number already exists."
         });
       } else if (response[0].response === "success") {
-
-
+ 
+ 
         console.log("response", response[0]);
         console.log(response[0], "response[0]");
         const name = `${response[0].full_name}`;
         const imageName = `${response[0].coupon_code}.png`;
         const imagePath = path.join(__dirname, '../uploads/delegate_qr', imageName);
-
+ 
         // const qrCodeBuffer = await qrcode.toBuffer(response[0].qr_code);
         // console.log(qrCodeBuffer, "qrCodeBuffer")
         // fs.writeFileSync(imagePath, qrCodeBuffer);
-
-
-
+ 
+ 
+ 
         async function generateQRCodeWithImage(imagePath, qr_url) {
           try {
             // Define paths
             const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
-
+ 
             const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
               errorCorrectionLevel: 'H', // High error correction for logo overlay
               scale: 10,// Scale for higher resolution QR code
               margin: 1
             });
-
+ 
             // Get QR code dimensions
             const qrDimensions = await sharp(qrCodeBuffer).metadata();
             const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
-
+ 
             // Apply circular mask to the logo and enhance quality
             const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
-
+ 
             // Process the QR code with the logo overlay
             await sharp(qrCodeBuffer)
               .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
@@ -202,37 +203,37 @@ const createPeacekeeper = (req, res) => {
                 blend: 'over', // Overlay the logo onto the QR code
               }])
               .toFile(imagePath); // Save the final image
-
+ 
             console.log("QR Code with sharp logo saved at:", imagePath);
           } catch (error) {
             console.error("Error generating QR code:", error);
           }
         }
-
+ 
         // Function to apply circular mask to the logo and sharpen it
         async function applyCircleMaskToLogo(logoPath, logoSize) {
           const logoImage = await sharp(logoPath)
             .resize(logoSize, logoSize) // Resize logo to desired size
             .toBuffer();
-
+ 
           // Create a circular mask for the logo
           const circleMask = Buffer.from(
             `<svg width="${logoSize}" height="${logoSize}">
                   <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
               </svg>`
           );
-
+ 
           // Apply circular mask on logo and sharpen the image
           return sharp(logoImage)
             .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
             .sharpen(2) // Apply sharpening for better clarity
             .toBuffer();
         }
-
+ 
         // Example Usage
         await generateQRCodeWithImage(imagePath, response[0].qr_code);
-
-
+ 
+ 
         const protocol = "https";
         const personData = {
           username: response[0].full_name || "N/A",
@@ -258,20 +259,20 @@ const createPeacekeeper = (req, res) => {
         if (!fs.existsSync(destFolder)) {
           fs.mkdirSync(destFolder, { recursive: true });
         }
-
+ 
         // Load images
         const baseImage = await loadImage(baseImagePath);
         const userPhoto = await loadImage(userPhotoPath);
         const qrCode = await loadImage(qrCodePath);
-
+ 
         // Create canvas
         if (req.body.Check_email == 1) {
           const canvas = createCanvas(baseImage.width, baseImage.height);
           const ctx = canvas.getContext("2d");
-
+ 
           // Draw base image
           ctx.drawImage(baseImage, 0, 0);
-
+ 
           // Draw circular user photo with border
           const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
           ctx.save();
@@ -280,46 +281,46 @@ const createPeacekeeper = (req, res) => {
           ctx.clip();
           ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
           ctx.restore();
-
+ 
           ctx.beginPath();
           ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
           ctx.strokeStyle = "green";
           ctx.lineWidth = borderWidth;
           ctx.stroke();
-
+ 
           // Add user details
           ctx.font = "bold 65px Arial";
           ctx.fillStyle = "black";
           ctx.fillText(personData.username, 200, 250);
-
+ 
           ctx.font = "bold 55px Arial";
           ctx.fillStyle = "#17598e";
           ctx.fillText("Country:", 200, 350);
           ctx.fillStyle = "black";
           ctx.fillText(personData.country, 440, 350);
-
+ 
           ctx.fillStyle = "#17598e";
           ctx.fillText("Mobile:", 200, 420);
           ctx.fillStyle = "black";
           ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
-
+ 
           ctx.fillStyle = "#17598e";
           ctx.fillText("E-mail:", 200, 500);
           ctx.fillStyle = "black";
           ctx.fillText(personData.email, 400, 500);
-
+ 
           ctx.fillStyle = "#17598e";
           ctx.fillText("ID No:", 200, 580);
           ctx.fillStyle = "black";
           ctx.fillText(personData.idNo, 400, 580);
-
-
+ 
+ 
           // ctx.fillStyle = "6px Arial #17598e";
           // ctx.fillText(response[0].qr_code, 100, 2440);
           // Add QR code
           const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
           ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
-
+ 
           // Save the output
           const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
           const out = fs.createWriteStream(outputFilePath);
@@ -331,7 +332,7 @@ const createPeacekeeper = (req, res) => {
             // Create a PDF document and save it
             const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
             const doc = new PDFDocument();
-
+ 
             doc.pipe(fs.createWriteStream(pdfFilePath));
             const margin = 0;
             doc.image(outputFilePath, {
@@ -345,25 +346,25 @@ const createPeacekeeper = (req, res) => {
               link: response[0].qr_code, // This makes the link clickable
               underline: true // Optional: underline the link for emphasis
             });
-
+ 
             doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
               link: response[0].qr_code, // This makes the link clickable
               underline: true, // Optional: underline the link for emphasis
             });
-
+ 
             doc.end();
-
+ 
             console.log(`Badge saved as PDF at: ${pdfFilePath}`);
           });
-
+ 
         }
         else {
           const canvas = createCanvas(baseImage.width, baseImage.height);
           const ctx = canvas.getContext("2d");
-
+ 
           // Draw base image
           ctx.drawImage(baseImage, 0, 0);
-
+ 
           // Draw circular user photo with border
           const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
           ctx.save();
@@ -372,46 +373,46 @@ const createPeacekeeper = (req, res) => {
           ctx.clip();
           ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
           ctx.restore();
-
+ 
           ctx.beginPath();
           ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
           ctx.strokeStyle = "green";
           ctx.lineWidth = borderWidth;
           ctx.stroke();
-
+ 
           // Add user details
           ctx.font = "bold 65px Arial";
           ctx.fillStyle = "black";
           ctx.fillText(personData.username, 200, 250);
-
+ 
           ctx.font = "bold 55px Arial";
           ctx.fillStyle = "#17598e";
           ctx.fillText("Country:", 200, 350);
           ctx.fillStyle = "black";
           ctx.fillText(personData.country, 440, 350);
-
+ 
           // ctx.fillStyle = "#17598e";
           // ctx.fillText("Mobile:", 200, 420);
           // ctx.fillStyle = "black";
           // ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
-
+ 
           // ctx.fillStyle = "#17598e";
           // ctx.fillText("E-mail:", 200, 500);
           // ctx.fillStyle = "black";
           // ctx.fillText(personData.email, 400, 500);
-
+ 
           ctx.fillStyle = "#17598e";
           ctx.fillText("ID No:", 200, 420);
           ctx.fillStyle = "black";
           ctx.fillText(personData.idNo, 400, 420);
-
-
+ 
+ 
           // ctx.fillStyle = "6px Arial #17598e";
           // ctx.fillText(response[0].qr_code, 100, 2440);
           // Add QR code
           const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
           ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
-
+ 
           // Save the output
           const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
           const out = fs.createWriteStream(outputFilePath);
@@ -423,7 +424,7 @@ const createPeacekeeper = (req, res) => {
             // Create a PDF document and save it
             const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
             const doc = new PDFDocument();
-
+ 
             doc.pipe(fs.createWriteStream(pdfFilePath));
             const margin = 0;
             doc.image(outputFilePath, {
@@ -437,38 +438,38 @@ const createPeacekeeper = (req, res) => {
               link: response[0].qr_code, // This makes the link clickable
               underline: true // Optional: underline the link for emphasis
             });
-
+ 
             doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
               link: response[0].qr_code, // This makes the link clickable
               underline: true, // Optional: underline the link for emphasis
             });
-
+ 
             doc.end();
-
+ 
             console.log(`Badge saved as PDF at: ${pdfFilePath}`);
           });
-
+ 
         }
         console.log("batch photo successfully saved");
         const destFolder1 = path.join(__dirname, "../uploads/badge_pdf");
         const destFolder2 = path.join(__dirname, "../uploads/batch_photo");
-
+ 
         const couponCode = response[0]?.coupon_code;
         if (!couponCode) {
           console.error("Error: coupon_code is undefined in response[0].");
-
+ 
         }
         console.log(couponCode, "//////");
         const imageName1 = `${couponCode}.png`;
         console.log(destFolder2, "destFolder2");
         const imagePath_pdf = path.join(destFolder2, imageName1);
         console.log(imagePath_pdf, "imagePath_pdf");
-
-
+ 
+ 
         const pdfPath = path.join(destFolder1, `${couponCode}.pdf`);
         console.log(pdfPath, "pdfPath");
         console.log(`${couponCode} processing complete.`);
-
+ 
         const transporter = nodemailer.createTransport({
           service: 'gmail', // or use any other email provider
           auth: {
@@ -494,10 +495,10 @@ const createPeacekeeper = (req, res) => {
               cid: 'qrCodeImage_pdf' // Same Content-ID as used in the HTML
             }
           ]
-
+ 
         };
-
-
+ 
+ 
         // Send the email
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
@@ -506,7 +507,7 @@ const createPeacekeeper = (req, res) => {
             console.log('Email sent: ' + info.response);
           }
         });
-
+ 
         return res.status(201).json({
           success: true,
           error: false,
@@ -517,7 +518,7 @@ const createPeacekeeper = (req, res) => {
           batch: `${protocol}://${req.get("host")}/uploads/batch/photo/${response[0].coupon_code}.png`,
           Data: peacekeeperData,
         });
-
+ 
       } else {
         return res.status(400).json({
           success: false,

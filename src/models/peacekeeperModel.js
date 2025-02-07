@@ -1,19 +1,19 @@
 const db = require('../../db.config');  // Assuming you have a database configuration file
 
 const insertPeacekeeper = (peacekeeperData, callback) => {
-    const { full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email,url, is_active } = peacekeeperData;
-    
-    const query = `
-        CALL SP_INSERT_PEACEKEEPER_MM(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-    `;
+  const { full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email,url, is_active } = peacekeeperData;
+ 
+  const query = `
+      CALL SP_INSERT_PEACEKEEPER_MM(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+  `;
 
-    db.query(query, [full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email, url,is_active], (err, results) => {
-        if (err) {
-            console.error("Database error: ", err);
-            return callback(err, null);
-        }
-        callback(null, results[0]);  // results[0] contains the response from the stored procedure
-    });
+  db.query(query, [full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email, url,is_active], (err, results) => {
+      if (err) {
+          console.error("Database error: ", err);
+          return callback(err, null);
+      }
+      callback(null, results[0]);  // results[0] contains the response from the stored procedure
+  });
 };
 
 const updatePeacekeeper = (req, callback) => {
