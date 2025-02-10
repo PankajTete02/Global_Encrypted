@@ -145,7 +145,7 @@ const inserting_transcation_details = (session) => {
       session.payment_intent,
       session.payment_status,
       random,
-      `https://devglobaljusticeapis.cylsys.com/uploads/ticket/photo/${random}.png`,
+      `https://api.justice-love-peace.com/uploads/ticket/photo/${random}.png`,
       "hall address"
     ], (error, results) => {
       if (error) {
