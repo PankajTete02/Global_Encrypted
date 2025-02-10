@@ -3,6 +3,7 @@ const otpModel = require('../models/loginModel');
 const nodemailer = require('nodemailer');
 
 
+
 async function otpSend(email, otp) {
 	console.log("zxzxzxzx");
   console.log(email,"email");
@@ -37,7 +38,14 @@ exports.sendOtp = async (req, res) => {
 		const { email,deviceId, deviceOs,registeration_type } = req.body;
 		console.log(req.body,"req.body");
 		if (!email || !deviceId || !deviceOs || !registeration_type) {
-			return res.status(400).json({ message: 'Missing required fields', status: 0 });
+			return res.status(400).json(
+				{
+					message:'Missing required fields', 
+					status: 400,
+					success:false,
+					error:true
+				}
+			);
 		}
 		
 		const result = await otpModel.insertLoginUser(email,deviceId, deviceOs,registeration_type);
@@ -56,6 +64,15 @@ exports.sendOtp = async (req, res) => {
 				 error:true
 				}
 				);
+		}
+		else if(result.result[0][0].status === 3){
+			console.log("3");
+			res.status(200).json(
+				{ message: result.result[0][0].message, 
+					status: 200,
+					success:true,
+					error:false
+				});
 		}
 		else if(result.result[0][0].status === 4){
 			console.log("4");
@@ -113,4 +130,58 @@ exports.verifyOtp = async (req, res) => {
 	}
 };
 
+// Parameter Email ,  Password, Confirm Password and Update Password feild in the tbl_peacekeeper_volunteers 
+exports.updatePassword = async (req, res) => {
+    try {
+        const { email, password, confirmPassword } = req.body;
+
+        if (!email || !password || !confirmPassword) {
+            return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
+        }
+		const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ success: false, error:true ,message: 'Password must contain at least one uppercase letter and one special character.' });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({ success: false, error:true,message: 'Password and Confirm Password do not match.' });
+        }
+		
+
+        const result = await otpModel.generatePassword(email, password);
+        // console.log("Update Result:", result);
+
+        return res.status(200).json(
+			{ message: result.message, 
+			status: 200,
+			success:true,
+			error:false
+		});
+
+    } catch (error) {
+        console.error("Error in updatePassword:", error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+exports.loginPeacekeeper = async (req, res) => {
+
+	try {
+		const { email, password } = req.body;
+		if (!email || !password) {
+			return res.status(400).json({ message: 'Missing email or password', status: 400 });
+		}
+		const result = await otpModel.loginPeacekeeper(email, password);
+		console.log(result[0].message,"result");
+		
+		res.status(200).json(
+			{ message: result[0].message, 
+				status: 200,
+				success:true,
+				error:false
+			}
+		);
+	} catch (error) {
+		res.status(500).json({ message: 'Internal server error', error });
+	}
+}
 

@@ -85,7 +85,6 @@ const authenicate=require("./src/routes/authenticate_route");
 const invitationRoute=require("./src/routes/invitationRoute");
 const loginRoute=require("./src/routes/loginRoute");
 
-
 app.get('/', (req, res) => {
 
   res.json("hello world");

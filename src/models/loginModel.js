@@ -1,10 +1,7 @@
 const db = require('../../db.config');
-
-
-
- // Generate a 6-char OTP
-
-
+const { encrypt } = require('../middleware/auth');
+require("dotenv").config();
+const CryptoJS = require("crypto-js");
 
 
 // Insert OTP into `tbl_user_login_info`
@@ -29,4 +26,25 @@ exports.verifyOtp = async (email, otp) => {
 	} catch (error) {
 		throw error;
 	}
+};
+
+
+exports.generatePassword = async (email, password) => {
+    try {
+ 
+        const encryptedPassword = CryptoJS.AES.encrypt(password, process.env.ENCRYPTION_KEY).toString();
+        // console.log(typeof encryptedPassword,"encryptPass");
+        
+        const rows = await db.promise().query('CALL USP_GENERATE_PEACEKEEPER_PASSWORD(?, ?)', [email, encryptedPassword]);
+		// console.log(rows,"rows");
+		
+        return { success: true, message: rows[0].message || 'Password updated successfully.' };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+};
+
+exports.loginPeacekeeper = async (email, password) => {
+
+	
 };
