@@ -109,6 +109,8 @@ app.use("/uploads/batch_pdf", express.static("src/uploads/batch_pdf"));
 app.use("/middle_ware/photo", express.static("src/middleware/assets/images"));
 app.use("/api/v1", invitationRoute);
 
+app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
+
 // Use the peacekeeper routes
 app.use('/api/v1', peacekeeperRoutes);
 app.use("/api/v1", Router);
