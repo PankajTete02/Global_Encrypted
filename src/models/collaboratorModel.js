@@ -2,7 +2,7 @@ var db = require("../../db.config");
 
 const CollaboratorModel = {
   getAll: (search, sort, order, limit, offset, callback ) => {
-    let sql = `SELECT * FROM tbl_collaborator WHERE sponsorship_name LIKE ? ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
+    let sql = `SELECT * FROM tbl_collaborator WHERE full_name LIKE ? ORDER BY ${sort} ${order} LIMIT ? OFFSET ?`;
     db.query(sql, [`%${search}%`, limit, offset], callback);
   },
 
