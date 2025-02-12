@@ -110,6 +110,7 @@ app.use("/middle_ware/photo", express.static("src/middleware/assets/images"));
 app.use("/api/v1", invitationRoute);
 
 app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
+app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
 
 // Use the peacekeeper routes
 app.use('/api/v1', peacekeeperRoutes);
