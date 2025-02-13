@@ -94,47 +94,44 @@ Delegatedetails.create = function (details, result) {
   );
 };
 //-------------------------------------Delegate Form -------------------------------------------------------------
-Delegatedetails.findById = function (req,res, result) {
-  const { page_no, size_no } = req.body;
-  if (!page_no || !size_no || page_no <= 0 || size_no <= 0) {
+Delegatedetails.findById = function (req,res,auth, result) {
+  const { page_no, page_size,name,email } = req.body;
+  if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
     return res.status(400).json({
       status: false,
       error: true,
       message: "Invalid page number or size.",
     });
   }
-  // Validate input to avoid SQL injection or invalid values
-  
-
-  // Log the incoming parameters for debugging
-  console.log("Page Number:", page_no, "Page Size:", size_no);
-
-  // Execute the stored procedure with the provided parameters
-  dbConn.query(
-    "CALL microsite_get_nonregistered_delegate(?, ?);",
-    [page_no, size_no],
-    function (err, res) {
-      if (err) {
-        console.error("Database Error:", err);
-        result(err, null);
-      } else {
-        console.log("Query Result:", res);
-        // Check if the stored procedure returns expected results
-        if (res && res[0]) {
-          result(null, res[0]); // Return only the data rows
+  else
+  {
+    console.log("Page Number:", page_no, "Page Size:", page_size,"Amin id",auth.user_id);
+    dbConn.query(
+      "CALL microsite_get_nonregistered_delegate(?,?,?,?,?);",
+      [page_no, page_size,auth.user_id,name,email],
+      function (err, res) {
+        if (err) {
+          console.error("Database Error:", err);
+          result(err, null);
         } else {
-          result(null, []);
+          console.log("Query Result:", res);
+          if (res && res[0]) {
+            result(null, res[0]); // Return only the data rows
+          } else {
+            result(null, []);
+          }
         }
       }
-    }
-  );
+    );
+  }
+  
 };
 
 // ====================GetAll--Approve--Delegate======
-Delegatedetails.findByApproved = function (req,res, result) {
-
-  const { page_no, size_no } = req.body;
-  if (!page_no || !size_no || page_no <= 0 || size_no <= 0) {
+Delegatedetails.findByApproved = function (req,res,auth, result) {
+  console.log(auth,"auth");
+  const { page_no, page_size,name,email } = req.body;
+  if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
     return res.status(400).json({
       status: false,
       error: true,
@@ -143,8 +140,8 @@ Delegatedetails.findByApproved = function (req,res, result) {
   }
   
   dbConn.query(
-    "call microsite_get_approved_delegate(?,?);",
-    [page_no, size_no],
+    "call microsite_get_approved_delegate(?,?,?,?,?);",
+    [page_no, page_size ,auth.user_id,name,email],
     function (err, res) {
       if (err) {
         console.error("Database Error:", err);

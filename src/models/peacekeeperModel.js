@@ -1,19 +1,19 @@
 const db = require('../../db.config');  // Assuming you have a database configuration file
 
 const insertPeacekeeper = (peacekeeperData, callback) => {
-  const { full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email,url, is_active } = peacekeeperData;
- 
-  const query = `
-      CALL SP_INSERT_PEACEKEEPER_MM(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
-  `;
+    const { full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email,url, is_active } = peacekeeperData;
+    
+    const query = `
+        CALL SP_INSERT_PEACEKEEPER_MM(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+    `;
 
-  db.query(query, [full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email, url,is_active], (err, results) => {
-      if (err) {
-          console.error("Database error: ", err);
-          return callback(err, null);
-      }
-      callback(null, results[0]);  // results[0] contains the response from the stored procedure
-  });
+    db.query(query, [full_name, country, email_id, dob, mobile_number, country_code, file_name, file_path, file_type, Check_email, url,is_active], (err, results) => {
+        if (err) {
+            console.error("Database error: ", err);
+            return callback(err, null);
+        }
+        callback(null, results[0]);  // results[0] contains the response from the stored procedure
+    });
 };
 
 const updatePeacekeeper = (req, callback) => {
@@ -43,18 +43,43 @@ const getPeacekeeperData = (peacekeeperId) => {
   };
 
 
-  const getAllPeacekeepers = (callback) => {
-    const sql = `CALL USP_GetAllPeacekeeperData();`;  // Calling the stored procedure to get all peacekeeper data
-
-    db.query(sql, (err, results) => {
+  const getAllPeacekeepers = (req, res,auth, callback) => {
+    // Validate pagination parameters
+    const { page_no, page_size, name, email } = req.body;
+ 
+    if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
+      return res.status(400).json({
+        status: false,
+        error: true,
+        message: "Invalid page number or size.",
+      });
+    }
+    console.log(auth,"auth12")
+    // Define the stored procedure call
+    const sql = `CALL USP_GetAllPeacekeeperData(?,?,?,?,?);`;
+ 
+    // Execute the stored procedure
+    db.query(
+      sql,
+      [
+        page_no,
+        page_size,
+        auth.user_id,
+        name || null, // Use `null` if no name is provided
+        email || null, // Use `null` if no email is provided
+      ],
+      (err, results) => {
         if (err) {
-            return callback(err, null);
+          console.error("Database Error:", err);
+          return callback(err, null);
         }
-
-        // Return the fetched results from the procedure
-        return callback(null, results[0]); // Assuming the first result set contains the desired data
-    });
-};
+ 
+        // Assuming the first result set contains the data
+        const peacekeeperData = results && results[0] ? results[0] : [];
+        return callback(null, peacekeeperData);
+      }
+    );
+  };
 
 
 

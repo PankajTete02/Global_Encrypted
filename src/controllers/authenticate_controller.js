@@ -10,59 +10,69 @@ const fs = require('fs');
 const sharp = require('sharp');
 const authenticate_controller={
 
-  login_peacekeeper : async(req,res)=>{
-    try{
-        console.log(req.body.encrypted_data,"encrypted_data");
-        const decrypt_details= await decrypt(req.body.encrypted_data);
-        const parsedData = JSON.parse(decrypt_details);
-        console.log(parsedData,"email"); 
+  login_peacekeeper: async (req, res) => {
+    try {
+        const { email, password, device_id, os_type, loginVia, otp } = req.body;
+        console.log(email.length,"email.length");
+        console.log(password.length,"password.length");
+        if (loginVia == 1 && (!email || !password)) {
+          return res.status(400).json({
+            status: 400,
+            success: false,
+            error: true,
+            message: "Email & password are required",
+          });
+        }
+        
+        if (loginVia == 0 && (!email || !otp)) {
+          return res.status(400).json({
+            status: 400,
+            success: false,
+            error: true,
+            message: "Email & OTP are required",
+          });
+        }
+        if (loginVia == 1 && (email || password)) {
+        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+        // console.log(loginResult,"result_login");
+         
+        }
+        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+        // console.log(loginResult,"loginResult");
+        
+        if (!loginResult || !loginResult[0] || !loginResult[0][0]) {
+            return res.status(500).json({
+                success: false,
+                error: true,
+                message: "Login failed. Please try again."
+            });
+        }
 
-        if(parsedData.email.length ==0)
-        {
+        if (loginResult[0][0].result === "No details found") {
+            return res.status(400).json({
+                success: false,
+                error: true,
+                message: "Invalid login credentials"
+            });
+        }
+
+        const token = jwt.sign({ user_details: loginResult[0][0] }, process.env.SECRET_KEY, { expiresIn: "10h" });
+
+        res.status(200).json({
+            success: true,
+            error: false,
+            data: loginResult[0][0],
+            token: token
+        });
+
+    } catch (error) {
         res.status(500).json({
-          success:false,
-          error:true,
-          message:"email_id is required"
-        })
-        }
-        else
-        {
-          const login_peacekeeper= await authenicate_model.peacekeeper_login(parsedData,req,res);
-          console.log(login_peacekeeper[0][0],"check_controller");
-          if(login_peacekeeper[0][0].result ==="No details found")
-          {
-            res.status(500).json({
-              success:true,
-              error:false,
-              message:login_peacekeeper[0][0].result
-            })
-          }
-          else
-          {
-            console.log(login_peacekeeper[0][0],"login_peacekeeper[0][0]");
-            const theToken = jwt.sign({user_details:login_peacekeeper[0][0]}, process.env.SECRET_KEY, { expiresIn: '10h' });
-            console.log(theToken,"token");
-            const encrypted_token= await encrypt(theToken);
-            const encrypted_data= await encrypt(login_peacekeeper[0][0]);
-            res.status(200).json({
-              success:true,
-              error:false,
-              data:encrypted_data,
-              token:encrypted_token
-            })
-          }
-          
-        }
+            success: false,
+            error: true,
+            message: error.message
+        });
     }
-    catch(error)
-    {
-      res.status(500).json({
-        success:false,
-        error:true,
-        message:error.message
-      })
-    }
-  },
+},
   download_badge : async(req,res)=>{
     try{
         

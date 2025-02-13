@@ -1,84 +1,74 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const CryptoJS = require("crypto-js");
+const { error } = require("pdf-lib");
 
 const config = process.env;
 
-// const VerifyToken = (req, res, next) => {
- async function VerifyToken(req, res, next) {
-  console.log('process.env.SECRET_KEY', process.env.SECRET_KEY);
+
+async function VerifyToken(req, res, next) {
+
   let token = req.headers.authorization;
-  console.log('req verifyToken', token);
-  console.log("AS");
   let data = {};
   if (!token) {
     console.log("ASZ");
-     return res.status(401).send({ auth: false, message: 'No token provided.' });
-    //data = { auth: false, message: 'No token provided.', success: false }
+    return res.status(401).send({
+      message: "Token not provided",
+      error:true,
+      success: false,
+      });
   }
   if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
-    console.log("ASVV");
-    token = req.headers.authorization.split(' ')[1];
+    token = await decrypt(req.headers.authorization.split(' ')[1]);
+    console.log("main", token)
   }
+  const token1 = `${token}`;
+  console.log(`${token1}`, "token12");
+  const token2 = token1.replace(/^"|"$/g, '');
+  console.log("updated", token2);
   try {
-    console.log("ASXXCC", token);
+    UsersTo = jwt.verify(token2, process.env.SECRET_KEY);
+    console.log("Verified User:", UsersTo);
+    console.log(UsersTo,"ZZZZZZ");
+    return UsersTo;
+  }
+  catch (err) {
+    console.log(err.expiredAt,"err");
+    console.log(err.message,"message");
 
-    // Verify the token using the secret key
-    const UsersTo = await jwt.verify(token, process.env.SECRET_KEY);
-    console.log('UsersTo.........', UsersTo);
-
-    // Check if the token contains a valid user_id
-    if (UsersTo?.user_id) {
-      // Check token expiration
-      if (UsersTo.exp < Date.now() / 1000) {
-        console.log('Token has expired');
-        return res.status(401).json({
-          message: "Token has expired",
-          userID: UsersTo?.user_id,
-          success: false,
-        });
-      } else {
-        console.log('Token is valid');
-        return {
-          message: "Token is valid",
-          userID: UsersTo?.user_id,
-          success: true,
-      };
-      }
-    } else {
-      
+    if (err.message === "jwt expired") {
+      console.log('Token has expired');
       return res.status(401).json({
-        message: "Invalid token payload",
-        success: false,
-      });
-    }
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-     
-      return res.status(400).json({
         message: "Token has expired",
-        expiredAt: err.expiredAt,
+        error:true,
         success: false,
       });
-    } else {
-     
-      return {
-        message: "Error during token verification",
-        error: err.message,
-        success: false,
-      };
     }
   }
+
 };
 
 
 async function encrypt(jsonObject) {
-  return CryptoJS.AES.encrypt(JSON.stringify(jsonObject),process.env.ENCRYPTION_KEY).toString();
+  console.log(jsonObject, "json");
+  console.log(process.env.ENCRYPTION_KEY, "process.env.ENCRYPTION_KEY");
+  return CryptoJS.AES.encrypt(JSON.stringify(jsonObject), process.env.ENCRYPTION_KEY).toString();
 }
 
 async function decrypt(encryptedData) {
-  const bytes = CryptoJS.AES.decrypt(encryptedData,process.env.ENCRYPTION_KEY);
-    return bytes.toString(CryptoJS.enc.Utf8);
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, process.env.ENCRYPTION_KEY);
+    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+ 
+    if (!decryptedText) {
+      throw new Error("Decryption failed: Invalid UTF-8 output");
+    }
+    return decryptedText;
+  } catch (error) {
+    console.error("Decryption Error:", error.message);
+    return null; // or throw error depending on your use case
+  }
 }
 
-module.exports = {VerifyToken,encrypt,decrypt};
+
+module.exports = { VerifyToken, encrypt, decrypt };
