@@ -7,7 +7,7 @@ router.post('/create-peacekeeper', peacekeeperController.createPeacekeeper);
 
 router.get('/peacekeeper/:id', peacekeeperController.getPeacekeeperData);
 
-router.get('/getAllpeacekeeper', peacekeeperController.getAllPeacekeeperData);
+router.post('/getAllpeacekeeper', peacekeeperController.getAllPeacekeeperData);
 
 router.get('/getAllContactUsData', peacekeeperController.getAllContactUsData);
 
@@ -22,6 +22,7 @@ router.post('/mail_discount_code', peacekeeperController.discountPeacekeeperData
 router.post('/create_session_stripe', peacekeeperController.session_status);
 
 router.get('/getAllpeacekeeperDropdown', peacekeeperController.getAllPeacekeeperDropdown);
+
 
 
 // router.post('/amb_badge', peacekeeperController.amb_badge);
