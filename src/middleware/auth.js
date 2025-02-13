@@ -73,10 +73,12 @@ const config = process.env;
 
 
 async function encrypt(jsonObject) {
+  console.log(jsonObject,"jsonObject");
   return CryptoJS.AES.encrypt(JSON.stringify(jsonObject),process.env.ENCRYPTION_KEY).toString();
 }
 
 async function decrypt(encryptedData) {
+  console.log(encryptedData,"encryptedData");
   const bytes = CryptoJS.AES.decrypt(encryptedData,process.env.ENCRYPTION_KEY);
     return bytes.toString(CryptoJS.enc.Utf8);
 }

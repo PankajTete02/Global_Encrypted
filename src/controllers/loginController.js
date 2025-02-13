@@ -1,7 +1,8 @@
 const { error } = require('pdf-lib');
 const otpModel = require('../models/loginModel');
 const nodemailer = require('nodemailer');
-
+const {VerifyToken,encrypt,decrypt} =require('../middleware/auth');
+const { log } = require('handlebars');
 
 
 async function otpSend(email, otp) {
@@ -69,18 +70,18 @@ exports.sendOtp = async (req, res) => {
 			console.log("3");
 			res.status(200).json(
 				{ message: result.result[0][0].message, 
-					status: 200,
-					success:true,
-					error:false
+					status: 400,
+					success:false,
+					error:true
 				});
 		}
 		else if(result.result[0][0].status === 4){
 			console.log("4");
 			res.status(200).json(
 				{ message: result.result[0][0].message, 
-					status: 200,
-					success:true,
-					error:false
+					status: 400,
+					success:false,
+					error:true
 				});
 		}
 		else
@@ -116,15 +117,48 @@ exports.verifyOtp = async (req, res) => {
 		}
 
 		const result = await otpModel.verifyOtp(email, otp);
-		console.log(result[0].message,"result");
-		
-		res.status(200).json(
-			{ message: result[0].message, 
-				status: 200,
-				success:true,
-				error:false
-			}
-		);
+		console.log(result,"result");
+		if(result[0].status === 2){
+			return res.status(200).json(
+				{ 
+					message: result[0].message,
+					is_password: result[0].status,
+					status: 200,
+					success:true,
+					error:false
+				}
+			);
+		}else if(result[0].status === 1){
+			return res.status(200).json(
+				{ 
+					message: result[0].message,
+					is_password: result[0].status,
+					status: 200,
+					success:true,
+					error:false
+				}
+			);
+		}else if(result[0].status === 3){	
+			return res.status(400).json(
+				{ 
+					message: result[0].message,
+					is_password: result[0].status,
+					status: 400,
+					success:false,
+					error:true
+				}
+			);
+		}else if(result[0].status === 4){	
+			return res.status(400).json(
+				{ 
+					message: result[0].message,
+					is_password: result[0].status,
+					status: 400,
+					success:false,
+					error:true
+				}
+			);
+		}
 	} catch (error) {
 		res.status(500).json({ message: 'Internal server error', error });
 	}
@@ -133,8 +167,13 @@ exports.verifyOtp = async (req, res) => {
 // Parameter Email ,  Password, Confirm Password and Update Password feild in the tbl_peacekeeper_volunteers 
 exports.updatePassword = async (req, res) => {
     try {
-        const { email, password, confirmPassword } = req.body;
-
+		// const decrypt_details= await decrypt(req.body);
+		// console.log(decrypt_details,"decrypt_details");
+		
+        // const parsedData = JSON.parse(decrypt_details);
+		const parsedData = req.body;
+		console.log(parsedData,"parsedData");
+		const {email, password, confirmPassword} = parsedData;
         if (!email || !password || !confirmPassword) {
             return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
         }
@@ -146,16 +185,26 @@ exports.updatePassword = async (req, res) => {
             return res.status(400).json({ success: false, error:true,message: 'Password and Confirm Password do not match.' });
         }
 		
-
-        const result = await otpModel.generatePassword(email, password);
-        // console.log("Update Result:", result);
-
-        return res.status(200).json(
-			{ message: result.message, 
+		const encryptedPassword =await encrypt(password);
+		
+        const result = await otpModel.generatePassword(email, encryptedPassword);
+		// console.log(result,"result");
+	
+		if(result.success == 1){
+		return res.status(200).json({
+			message: result.message, 
 			status: 200,
 			success:true,
 			error:false
 		});
+	}else{
+		return res.status(400).json({
+			message: result, 
+			status: 400,
+			success:false,
+			error:true
+		});
+	}
 
     } catch (error) {
         console.error("Error in updatePassword:", error);
@@ -163,25 +212,34 @@ exports.updatePassword = async (req, res) => {
     }
 };
 
-exports.loginPeacekeeper = async (req, res) => {
+exports.fetchLookupData = async (req, res) => {
+	const inputData = req.body;
+	otpModel.getLookupData(inputData, (err, data) => {
+	  if (err) {
+		console.error('Error fetching data:', err);
+		return res.status(500).json({
+		  error: true,
+		  message: err.message,
+		});
+	  }
+	  res.status(200).json(data);
+	});
+  };
 
-	try {
-		const { email, password } = req.body;
-		if (!email || !password) {
-			return res.status(400).json({ message: 'Missing email or password', status: 400 });
-		}
-		const result = await otpModel.loginPeacekeeper(email, password);
-		console.log(result[0].message,"result");
-		
-		res.status(200).json(
-			{ message: result[0].message, 
-				status: 200,
-				success:true,
-				error:false
-			}
-		);
-	} catch (error) {
-		res.status(500).json({ message: 'Internal server error', error });
-	}
-}
+exports.deactivateUser = async (req, res) => {
+    try {
+        const { userId, role } = req.body;
+
+        if (!userId || !role) {
+            return res.status(400).json({ message: "userId and role are required" });
+        }
+
+        await otpModel.deactivateUser(userId, role);
+        return res.status(200).json({ message: "User deactivated successfully" });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Error deactivating user", error: error.message });
+    }
+};
+
 

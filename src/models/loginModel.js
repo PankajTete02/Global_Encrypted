@@ -32,10 +32,7 @@ exports.verifyOtp = async (email, otp) => {
 exports.generatePassword = async (email, password) => {
     try {
  
-        const encryptedPassword = CryptoJS.AES.encrypt(password, process.env.ENCRYPTION_KEY).toString();
-        // console.log(typeof encryptedPassword,"encryptPass");
-        
-        const rows = await db.promise().query('CALL USP_GENERATE_PEACEKEEPER_PASSWORD(?, ?)', [email, encryptedPassword]);
+        const rows = await db.promise().query('CALL USP_GENERATE_PEACEKEEPER_PASSWORD(?, ?)', [email, password]);
 		// console.log(rows,"rows");
 		
         return { success: true, message: rows[0].message || 'Password updated successfully.' };
@@ -44,7 +41,32 @@ exports.generatePassword = async (email, password) => {
     }
 };
 
-exports.loginPeacekeeper = async (email, password) => {
+exports.getLookupData   = async (lookupdata, callback) => {
+    const query = "CALL USP_GLOBAL_FETCH_LOOKUP_MASTER(?, ?)";
+    const params = [
+      lookupdata.parent_code,
+      lookupdata.type
+    ];
+ 
+    db.query(query, params, (err, results) => {
+      if (err) {
+        console.error("Database error: ", err);
+        return callback(err, null);
+      }
+      callback(null, results[0]);
+    });
+  };
 
-	
+ exports.deactivateUser = async (userId, role) => {
+    return new Promise((resolve, reject) => {
+        const sql = "CALL USP_GLOBAL_DEACTIVE_USER(?, ?)";
+        db.query(sql, [userId, role], (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
+        });
+    });
 };
+
