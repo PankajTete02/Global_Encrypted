@@ -1,5 +1,6 @@
 const CollaboratorModel = require('../models/collaboratorModel');
 
+// API to get all collaborators
 exports.getAllCollaborator = (req, res) => {
   let { page, limit, sort, order, search } = req.query;
   page = parseInt(page) || 1;
@@ -13,7 +14,7 @@ exports.getAllCollaborator = (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
 
     const totalItems = countResult[0].total;
-    
+
     CollaboratorModel.getAll(search, sort, order, limit, offset, (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -22,6 +23,7 @@ exports.getAllCollaborator = (req, res) => {
   });
 };
 
+// API to get collaborator by ID
 exports.getCollaboratorById = (req, res) => {
   CollaboratorModel.getById(req.params.id, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -30,6 +32,7 @@ exports.getCollaboratorById = (req, res) => {
   });
 };
 
+// API to create a collaborator
 exports.createCollaborator = (req, res) => {
   CollaboratorModel.create(req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -37,6 +40,7 @@ exports.createCollaborator = (req, res) => {
   });
 };
 
+// API to update a collaborator
 exports.updateCollaborator = (req, res) => {
   CollaboratorModel.update(req.params.id, req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -44,6 +48,7 @@ exports.updateCollaborator = (req, res) => {
   });
 };
 
+// API to delete a collaborator
 exports.deleteCollaborator = (req, res) => {
   CollaboratorModel.delete(req.params.id, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });

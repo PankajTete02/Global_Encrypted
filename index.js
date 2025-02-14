@@ -35,7 +35,8 @@ const cors = require("cors");
 // Setup server port
 const port = process.env.PORT || 4000;
 // parse requests of content-type - application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json({ limit: "50mb" })); // Increase limit for JSON payloads
+app.use(express.urlencoded({ limit: "50mb", extended: true })); // Increase limit for URL-encoded data
 // parse requests of content-type - application/json
 app.use(bodyParser.json())
 // const Pending_report = require('./src/routes/PendingReport.routes')

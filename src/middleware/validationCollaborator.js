@@ -7,7 +7,8 @@ const collaboratorSchema = Joi.object({
     email: Joi.string().email().required(),
     country_id: Joi.number().required(),
     country: Joi.string().required(),
-    is_active: Joi.boolean().default(false)
+    is_active: Joi.number().valid(0, 1).default(0),
+    logo_image: Joi.string().required()
   });
   
   const validateCollaborator = (req, res, next) => {

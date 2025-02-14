@@ -13,10 +13,10 @@ const sponsorshipSchema = Joi.object({
   city_id: Joi.number().required(),
   city: Joi.string().required(),
   address: Joi.string().required(),
-  ref_by: Joi.string().valid('peacekeeper', 'other').required(),
-  peacekeeper_other_name: Joi.string().required(),
-  peacekeeper_id: Joi.number().allow(null).optional(),
-  is_active: Joi.boolean().default(false)
+  ref_by: Joi.string().valid('peacekeeper', 'other').allow(null,'').optional(),
+  peacekeeper_other_name: Joi.string().allow(null,'').optional(),
+  peacekeeper_id: Joi.number().allow(null,'').optional(),
+  is_active: Joi.number().valid(0, 1).default(0)
 });
 
 const validateSponsorship = (req, res, next) => {
