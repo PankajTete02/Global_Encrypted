@@ -5,7 +5,7 @@ exports.getAllSponsorships = (req, res) => {
   page = parseInt(page) || 1;
   limit = parseInt(limit) || 25;
   const offset = (page - 1) * limit;
-  sort = sort || 'id';
+  sort = sort || 'created_at';
   order = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
   search = search || '';
 
@@ -33,14 +33,14 @@ exports.getSponsorshipById = (req, res) => {
 exports.createSponsorship = (req, res) => {
   SponsorshipModel.create(req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: 'Sponsorship created', id: result.insertId });
+    res.status(201).json({ message: 'Sponsorship created'});
   });
 };
 
 exports.updateSponsorship = (req, res) => {
   SponsorshipModel.update(req.params.id, req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Sponsorship updated' });
+    res.json({ message: 'Sponsorship updated'});
   });
 };
 

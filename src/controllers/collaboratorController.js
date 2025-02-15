@@ -6,7 +6,7 @@ exports.getAllCollaborator = (req, res) => {
   page = parseInt(page) || 1;
   limit = parseInt(limit) || 25;
   const offset = (page - 1) * limit;
-  sort = sort || 'id';
+  sort = sort || 'created_at';
   order = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
   search = search || '';
 
@@ -36,7 +36,7 @@ exports.getCollaboratorById = (req, res) => {
 exports.createCollaborator = (req, res) => {
   CollaboratorModel.create(req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: 'Collaborator created', id: result.insertId });
+    res.status(201).json({ message: 'Collaborator created'});
   });
 };
 
