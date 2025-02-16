@@ -50,7 +50,7 @@ exports.sendOtp = async (req, res) => {
 		}
 		
 		const result = await otpModel.insertLoginUser(email,deviceId, deviceOs,registeration_type);
-		console.log(result.result[0][0].status,"check");
+		console.log(result[0],"check");
 		console.log(result.otp,"otp");
 		if(result.result[0][0].status === 1){
 			console.log("1");

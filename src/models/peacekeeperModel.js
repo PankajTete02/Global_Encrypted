@@ -43,56 +43,90 @@ const getPeacekeeperData = (peacekeeperId) => {
   };
 
 
-  const getAllPeacekeepers = (req, res,auth, callback) => {
-    // Validate pagination parameters
-    const { page_no, page_size, name, email } = req.body;
- 
-    if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
-      return res.status(400).json({
-        status: false,
-        error: true,
-        message: "Invalid page number or size.",
-      });
-    }
-    console.log(auth,"auth12")
-    // Define the stored procedure call
-    const sql = `CALL USP_GetAllPeacekeeperData(?,?,?,?,?);`;
- 
-    // Execute the stored procedure
+  // const getAllPeacekeepers = (req, auth, callback) => {
+  //   console.log("Callback type:", typeof callback);
+  //   const { page_no, page_size, name, email, sort_column, sort_order } = req.body;
+  
+  //   const sql = `CALL USP_GetAllPeacekeeperData(?,?,?,?,?,?,?);`;
+  
+  //   db.query(
+  //     sql,
+  //     [
+  //       page_no,
+  //       page_size,
+  //       auth.user_id,
+  //       name || null,
+  //       email || null,
+  //       sort_column , 
+  //       sort_order || "ASC",
+  //     ],
+  //     (err, results) => {
+  //       if (err) {
+  //         console.error("Database Error:", err);
+  //         return callback(err, null);
+  //       }
+  //       console.log("Results:", results[1]);
+        
+  //       const Data = results && results[1] && results[0] ? results[0] : [];
+  //       const totalCount = results && results[1] && results[1][0] ? results[1][0].total_count : 0;
+  //       let finalData = {
+  //         Data,
+  //         totalCount: totalCount
+  //         };
+  //       return callback(null, finalData );
+  //     }
+  //   );
+  // };
+  
+  const getAllPeacekeepers = (req, auth, callback) => {
+    console.log("Callback type:", typeof callback);
+    console.log( auth.user_id," auth.user_id,");
+    
+    const { page_no, page_size, search, sort_column, sort_order } = req.body;
+
+    const sql = `CALL USP_GetAllPeacekeeperData(?,?,?,?,?,?);`;
+
     db.query(
-      sql,
-      [
-        page_no,
-        page_size,
-        auth.user_id,
-        name || null, // Use `null` if no name is provided
-        email || null, // Use `null` if no email is provided
-      ],
-      (err, results) => {
-        if (err) {
-          console.error("Database Error:", err);
-          return callback(err, null);
+        sql,
+        [
+            page_no || 1,             // Default page_no to 1
+            page_size || 10,          // Default page_size to 10
+            auth.user_id,             // Admin ID
+            search  ,          // Global search input
+            sort_column , // Default sorting column
+            sort_order     // Default sorting order
+        ],
+        (err, results) => {
+            if (err) {
+                console.error("Database Error:", err);
+                return callback(err, null);
+            }
+            
+            console.log("Results:", results);
+
+            const Data = results && results[0] ? results[0] : [];
+            const totalCount = results && results[1] && results[1][0] ? results[1][0].total_count : 0;
+
+            let finalData = {
+                Data,
+                totalCount
+            };
+            return callback(null, finalData);
         }
- 
-        // Assuming the first result set contains the data
-        const peacekeeperData = results && results[0] ? results[0] : [];
-        return callback(null, peacekeeperData);
-      }
     );
-  };
+};
 
 
 
-const getAllContactUs = (callback) => {
-  const sql = `CALL USP_GetAllContactUsData();`;  // Calling the stored procedure to get all peacekeeper data
+const getAllContactUs = (page_no, page_size, search, sort_column, sort_order, callback) => {
+  const sql = `CALL USP_GetAllContactUsData(?, ?, ?, ?, ?);`;  // Correct parameter count
 
-  db.query(sql, (err, results) => {
-      if (err) {
-          return callback(err, null);
-      }
+  db.query(sql, [page_no, page_size, search, sort_column, sort_order], (err, results) => {
+    if (err) {
+      return callback(err, null);
+    }
 
-      // Return the fetched results from the procedure
-      return callback(null, results[0]); // Assuming the first result set contains the desired data
+    return callback(null, results);
   });
 };
 

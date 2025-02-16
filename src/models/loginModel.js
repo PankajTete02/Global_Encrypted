@@ -7,6 +7,8 @@ const CryptoJS = require("crypto-js");
 // Insert OTP into `tbl_user_login_info`
 exports.insertLoginUser = async (email, deviceId, deviceOs,registeration_type) => {
 	console.log("re",registeration_type);
+    console.log(email,"email");
+    
 	try {
 		const otp = Math.random().toString(36).slice(-6).toUpperCase();
 		console.log(otp,"otp");

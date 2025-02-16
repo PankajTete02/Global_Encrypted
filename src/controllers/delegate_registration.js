@@ -117,9 +117,9 @@ exports.findById = async function (req, res) {
     // Verify the token
     const auth = await VerifyToken(req, res);
     console.log(auth, "auth");
-    console.log(auth,"authauth");
+
     // Fetch the delegate details
-    Delegatedetails.findById(req, res,auth,async function (err, Details) {
+    Delegatedetails.findById(req, res, auth, async function (err, Details) {
       if (err) {
         console.log(err);
         return res.status(400).json({
@@ -128,19 +128,18 @@ exports.findById = async function (req, res) {
           message: "Something went wrong. Please try again.",
         });
       }
-      console.log(Details[0].status,"Details");
+
+      console.log(Details[0].status, "Details");
       const encrypted_data = await encrypt(Details);
-      console.log(encrypted_data,"encrypted_data");
-      if(Details[0].status == 1)
-      {
+      console.log(encrypted_data, "encrypted_data");
+
+      if (Details[0].status == 1) {
         return res.json({
           success: false,
           error: true,
           message: Details[0].result,
         });
-      }
-      else
-      {
+      } else {
         return res.json({
           data: encrypted_data,
           success: true,
@@ -148,7 +147,6 @@ exports.findById = async function (req, res) {
           message: "Delegate Details fetched successfully!",
         });
       }
-      
     });
   } catch (error) {
     console.error(error);
@@ -166,34 +164,49 @@ exports.findById = async function (req, res) {
 exports.findByApproved = async function (req, res) {
   try {
     // Verify the token
-    const auth = await VerifyToken(req, res); // Assuming VerifyToken is async
-    console.log(auth, "auth");
+    const auth = await VerifyToken(req, res);
+    const authId = auth.user_id;
 
-    // Call the model function to fetch approved delegate details
-    Delegatedetails.findByApproved(req, res,auth,async function (err, Details) {
-      if (err) {
-        console.log(err);
-        return res.status(400).json({
-          status: false,
-          error: true,
-          message: "Something went wrong. Please try again.",
+    console.log("Authenticated User ID:", authId);
+
+    // Extract parameters from request body
+    const { page_no, page_size, search, sort_column, sort_order } = req.body;
+    console.log(req.body,"req.body");
+    
+    // Call the model function
+    Delegatedetails.findByApproved(
+      authId,
+      page_no,
+      page_size,
+      search,
+      sort_column,
+      sort_order,
+      function (err, data) {
+        if (err) {
+          console.error("Database Error:", err);
+          return res.status(400).json({
+            success: false,
+            error: true,
+            message: "Something went wrong. Please try again.",
+          });
+        }
+        // console.log(data,"data[0]");
+        // console.log(data[0][0],"data[0][1]");
+
+        console.log(data[1][0].total_records, "total_records");
+        return res.json({
+          success: true,
+          error: false,
+          message: "Approved Delegate Details fetched successfully!",
+          totalCount: data[1][0].total_records,  // Include total count
+          data: data[0]
         });
       }
-
-      // Successfully fetched details
-      console.log("avbsbs", Details);
-      const encrypt_data=await encrypt(Details);
-      return res.json({
-        data: encrypt_data,
-        success: true,
-        error: false,
-        message: "Approved Delegate Details fetched successfully!",
-      });
-    });
+    );
   } catch (error) {
     console.error("Error during token verification:", error);
     return res.status(500).json({
-      status: false,
+      success: false,
       error: true,
       message: "Internal Server Error. Please try again.",
     });

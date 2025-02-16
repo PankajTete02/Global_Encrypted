@@ -10,68 +10,105 @@ const fs = require('fs');
 const sharp = require('sharp');
 const authenticate_controller={
 
-  login_peacekeeper: async (req, res) => {
-    try {
-        const { email, password, device_id, os_type, loginVia, otp } = req.body;
-        console.log(email.length,"email.length");
-        console.log(password.length,"password.length");
-        if (loginVia == 1 && (!email || !password)) {
-          return res.status(400).json({
-            status: 400,
-            success: false,
-            error: true,
-            message: "Email & password are required",
-          });
-        }
+//   login_peacekeeper: async (req, res) => {
+//     try {
+//         const { email, password, device_id, os_type, loginVia, otp } = req.body;
+//         console.log(email.length,"email.length");
+//         console.log(password.length,"password.length");
+//         if (loginVia == 1 && (!email || !password)) {
+//           return res.status(400).json({
+//             status: 400,
+//             success: false,
+//             error: true,
+//             message: "Email & password are required",
+//           });
+//         }
         
-        if (loginVia == 0 && (!email || !otp)) {
-          return res.status(400).json({
-            status: 400,
-            success: false,
-            error: true,
-            message: "Email & OTP are required",
-          });
-        }
-        if (loginVia == 1 && (email || password)) {
-        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
-        // console.log(loginResult,"result_login");
+//         if (loginVia == 0 && (!email || !otp)) {
+//           return res.status(400).json({
+//             status: 400,
+//             success: false,
+//             error: true,
+//             message: "Email & OTP are required",
+//           });
+//         }
+//         if (loginVia == 1 && (email || password)) {
+//         const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+//         // console.log(loginResult,"result_login");
          
-        }
-        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
-        // console.log(loginResult,"loginResult");
+//         }
+//         const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+//         // console.log(loginResult,"loginResult");
+//         if(loginResult.status = -1){
+//           return res.status(400).json({
+//             success: false,
+//             error: true,
+//             message: loginResult.message
+//         });
+//         }
         
-        if (!loginResult || !loginResult[0] || !loginResult[0][0]) {
-            return res.status(500).json({
-                success: false,
-                error: true,
-                message: "Login failed. Please try again."
-            });
-        }
+//         if (!loginResult || !loginResult[0] || !loginResult[0][0]) {
+//             return res.status(500).json({
+//                 success: false,
+//                 error: true,
+//                 message: "Login failed. Please try again."
+//             });
+//         }
 
-        if (loginResult[0][0].result === "No details found") {
-            return res.status(400).json({
-                success: false,
-                error: true,
-                message: "Invalid login credentials"
-            });
-        }
+//         if (loginResult[0][0].result === "No details found") {
+//             return res.status(400).json({
+//                 success: false,
+//                 error: true,
+//                 message: "Invalid login credentials"
+//             });
+//         }
 
-        const token = jwt.sign({ user_details: loginResult[0][0] }, process.env.SECRET_KEY, { expiresIn: "10h" });
+//         const token = jwt.sign({ user_details: loginResult[0][0] }, process.env.SECRET_KEY, { expiresIn: "10h" });
 
-        res.status(200).json({
-            success: true,
-            error: false,
-            data: loginResult[0][0],
-            token: token
-        });
+//         res.status(200).json({
+//             success: true,
+//             error: false,
+//             data: loginResult[0][0],
+//             token: token
+//         });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: true,
-            message: error.message
-        });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             error: true,
+//             message: error.message
+//         });
+//     }
+// },
+
+
+ login_peacekeeper: async (req, res) => {
+  try {
+    const { email, password, device_id, os_type, loginVia, otp } = req.body;
+
+    if (loginVia == 1 && (!email || !password)) {
+      return res.status(400).json({ success: false, error: true, message: "Email & password are required" });
     }
+    
+    if (loginVia == 0 && (!email || !otp)) {
+      return res.status(400).json({ success: false, error: true, message: "Email & OTP are required" });
+    }
+
+    const loginResult = await authenicate_model.peacekeeper_login(req.body);
+
+    if (!loginResult.success) {
+      return res.status(400).json({ success: false, error: true, message: loginResult.message });
+    }
+
+    const userData = loginResult.data;
+    const token = jwt.sign({ user_details: userData }, process.env.SECRET_KEY, { expiresIn: "10h" });
+
+    return res.status(200).json({ success: true, error: false, data: userData, token });
+
+  } catch (error) {
+    console.error("Login Error:", error);
+    return res.status(500).json({ success: false, error: true, message: "Internal Server Error" });
+  }
 },
   download_badge : async(req,res)=>{
     try{

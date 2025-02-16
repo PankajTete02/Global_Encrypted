@@ -94,21 +94,25 @@ Delegatedetails.create = function (details, result) {
   );
 };
 //-------------------------------------Delegate Form -------------------------------------------------------------
-Delegatedetails.findById = function (req,res,auth, result) {
-  const { page_no, page_size,name,email } = req.body;
+Delegatedetails.findById = function (req, res, auth, result) {
+  const { page_no, page_size, name, email, sort_column, sort_order } = req.body;
+
   if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
     return res.status(400).json({
       status: false,
       error: true,
       message: "Invalid page number or size.",
     });
-  }
-  else
-  {
-    console.log("Page Number:", page_no, "Page Size:", page_size,"Amin id",auth.user_id);
+  } else {
+    console.log("Page Number:", page_no, "Page Size:", page_size, "Admin id:", auth.user_id);
+
+    // Ensure default values for sorting if not provided
+    const sortColumn = sort_column || 'created_date'; // Default sort column
+    const sortOrder = sort_order || 'ASC'; // Default sort order
+
     dbConn.query(
-      "CALL microsite_get_nonregistered_delegate(?,?,?,?,?);",
-      [page_no, page_size,auth.user_id,name,email],
+      "CALL microsite_get_nonregistered_delegate(?, ?, ?, ?, ?, ?, ?);",
+      [page_no, page_size, auth.user_id, name, email, sortColumn, sortOrder],
       function (err, res) {
         if (err) {
           console.error("Database Error:", err);
@@ -124,40 +128,47 @@ Delegatedetails.findById = function (req,res,auth, result) {
       }
     );
   }
-  
 };
 
+
 // ====================GetAll--Approve--Delegate======
-Delegatedetails.findByApproved = function (req,res,auth, result) {
-  console.log(auth,"auth");
-  const { page_no, page_size,name,email } = req.body;
-  if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
-    return res.status(400).json({
-      status: false,
-      error: true,
-      message: "Invalid page number or size.",
-    });
-  }
-  
+Delegatedetails.findByApproved = function (
+  authId,
+  page_no,
+  page_size,
+  search,
+  sort_column,
+  sort_order,
+  result
+) {
+  console.log("Fetching approved delegates for Admin ID:", authId);
+
+  // Execute stored procedure
   dbConn.query(
-    "call microsite_get_approved_delegate(?,?,?,?,?);",
-    [page_no, page_size ,auth.user_id,name,email],
-    function (err, res) {
+    "CALL microsite_get_approved_delegate(?,?,?,?,?,?)",
+    [page_no, page_size, authId, search, sort_column, sort_order],
+    function (err, dbRes) {
       if (err) {
         console.error("Database Error:", err);
-        result(err, null);
+        return result(err, null);
+      }
+
+      console.log("Query Result:", dbRes);
+      console.log("Query Result111:", dbRes[0]);
+
+
+      // Ensure the procedure returned results
+      if (dbRes && dbRes[0]) {
+        result(null, dbRes); // Return only the first result set (main data)
+        return dbRes
       } else {
-        console.log("Query Result:", res);
-        // Check if the stored procedure returns expected results
-        if (res && res[0]) {
-          result(null, res[0]); // Return only the data rows
-        } else {
-          result(null, []);
-        }
+        result(null, []); // Return empty array if no results found
       }
     }
   );
 };
+
+
 //-------------------------------------------Partner Form --------------------------------------------------------------------------
 
 Delegatedetails.findByPartner = function (id, result) {

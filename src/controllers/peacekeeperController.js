@@ -952,17 +952,73 @@ const getPeacekeeperData = async (req, res) => {
   }
 };
 
+// const getAllPeacekeeperData = async (req, res) => {
+//   try {
+//     // Verify the token
+//     const auth = await VerifyToken(req, res);
+ 
+//     console.log(auth, "auth");
+ 
+//     // Call the model function to fetch peacekeeper data
+//     peacekeeperModel.getAllPeacekeepers(req, res,auth, async (err, peacekeepers) => {
+//       if (err) {
+//         console.error("Error fetching peacekeeper data: ", err);
+//         return res.status(500).json({
+//           success: false,
+//           error: true,
+//           message: "Server error.",
+//           details: err
+//         });
+//       }
+ 
+//       console.log(peacekeepers, "peacekeepers");
+//       console.log(peacekeepers[0]?.file_name, "file_name"); // Optional chaining for safety
+//       console.log(peacekeepers.length, "length");
+ 
+//       // Loop through peacekeepers and update file_name paths
+//       for (let i = 0; i < peacekeepers.length; i++) {
+//         const imageFileNames = peacekeepers[i].file_name;
+//         const protocol = "https";
+//         const basePath = `${protocol}://${req.get("host")}/uploads`;
+//         const imagePaths = imageFileNames
+//           ? imageFileNames
+//             .split(", ")
+//             .map((fileName) => `${basePath}/${fileName.trim()}`)
+//           : [];
+//         console.log("Image Paths:", imagePaths);
+//         peacekeepers[i].file_name = imagePaths; // Update the file_name with image paths
+//         console.log(i); // Debugging the index
+//       }
+//       const encrypted_data= await encrypt(peacekeepers);
+//       // Return the data after processing the peacekeepers
+//       return res.status(200).json({
+//         success: true,
+//         error: false,
+//         data: encrypted_data,
+//         message: "Peacekeeper data fetched successfully."
+//       });
+//     });
+//   } catch (error) {
+//     // Handle errors that occur during token verification or other async tasks
+//     console.error("Error during token verification or other processes: ", error);
+//     return res.status(500).json({
+//       success: false,
+//       error: true,
+//       message: "Internal Server Error. Please try again.",
+//       details: error
+//     });
+//   }
+// };
+ 
 const getAllPeacekeeperData = async (req, res) => {
   try {
-    // Verify the token
     const auth = await VerifyToken(req, res);
- 
-    console.log(auth, "auth");
- 
-    // Call the model function to fetch peacekeeper data
-    peacekeeperModel.getAllPeacekeepers(req, res,auth, async (err, peacekeepers) => {
+    console.log("Auth verified:", auth);
+
+    // Ensure the callback function is correctly passed
+    peacekeeperModel.getAllPeacekeepers(req, auth, (err, peacekeepers) => {
       if (err) {
-        console.error("Error fetching peacekeeper data: ", err);
+        console.error("Error fetching peacekeeper data:", err);
         return res.status(500).json({
           success: false,
           error: true,
@@ -970,53 +1026,55 @@ const getAllPeacekeeperData = async (req, res) => {
           details: err
         });
       }
- 
-      console.log(peacekeepers, "peacekeepers");
-      console.log(peacekeepers[0]?.file_name, "file_name"); // Optional chaining for safety
-      console.log(peacekeepers.length, "length");
- 
-      // Loop through peacekeepers and update file_name paths
-      for (let i = 0; i < peacekeepers.length; i++) {
-        const imageFileNames = peacekeepers[i].file_name;
+
+      // console.log("Peacekeepers retrieved:", peacekeepers.Data ,  peacekeepers.totalCount);
+     let finalData =peacekeepers.Data
+     
+
+      for (let i = 0; i < finalData.length; i++) {
+        const imageFileNames = finalData[i].file_name;
         const protocol = "https";
         const basePath = `${protocol}://${req.get("host")}/uploads`;
         const imagePaths = imageFileNames
-          ? imageFileNames
-            .split(", ")
-            .map((fileName) => `${basePath}/${fileName.trim()}`)
+          ? imageFileNames.split(", ").map((fileName) => `${basePath}/${fileName.trim()}`)
           : [];
-        console.log("Image Paths:", imagePaths);
-        peacekeepers[i].file_name = imagePaths; // Update the file_name with image paths
-        console.log(i); // Debugging the index
+
+          finalData[i].file_name = imagePaths;
+        
       }
-      const encrypted_data= await encrypt(peacekeepers);
-      // Return the data after processing the peacekeepers
       return res.status(200).json({
         success: true,
         error: false,
-        data: encrypted_data,
+        peacekeepers,
         message: "Peacekeeper data fetched successfully."
       });
     });
   } catch (error) {
-    // Handle errors that occur during token verification or other async tasks
-    console.error("Error during token verification or other processes: ", error);
+    console.error("Error during processing:", error);
     return res.status(500).json({
       success: false,
       error: true,
-      message: "Internal Server Error. Please try again.",
+      message: "Internal Server Error.",
       details: error
     });
   }
 };
- 
- 
 
 const getAllContactUsData = (req, res) => {
-  // Call the model function to fetch peacekeeper data
-  peacekeeperModel.getAllContactUs((err, peacekeepers) => {
+  // Extract parameters from request body
+  let { page_no, page_size, search, sort_column, sort_order } = req.body;
+
+  // Ensure valid values
+  page_no = Number(page_no) > 0 ? Number(page_no) : 1;
+  page_size = Number(page_size) > 0 ? Number(page_size) : 10;
+  search = search 
+  sort_column = sort_column 
+  sort_order = sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+  // Call the model function to fetch contact data
+  peacekeeperModel.getAllContactUs(page_no, page_size, search, sort_column, sort_order, (err, result) => {
     if (err) {
-      console.error("Error fetching peacekeeper data: ", err);
+      console.error("Error fetching contact data: ", err);
       return res.status(500).json({
         success: false,
         error: true,
@@ -1025,15 +1083,20 @@ const getAllContactUsData = (req, res) => {
       });
     }
 
-    // If data is successfully fetched, return it in the response
+    // Extract data and total count from stored procedure results
+    const contactData = result[0] || []; // First result set contains actual data
+    const totalRecords = result[1]?.[0]?.total_records || 0; // Second result set contains total records
+
     return res.status(200).json({
       success: true,
       error: false,
-      data: peacekeepers,
+      data: contactData,
+      totalCount: totalRecords,
       message: "Contact data fetched successfully."
     });
   });
 };
+
 
 const getAllEmailData = async (req, res) => {
   try {
