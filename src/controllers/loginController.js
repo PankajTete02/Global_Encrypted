@@ -21,7 +21,7 @@ async function otpSend(email, otp) {
 		from: 'Peacekeeper@global-jlp-summit.com',
 		to: email,
 		subject: 'Your OTP Code',
-		text: `Your OTP code is ${otp}. It will expire in 5 minutes.`
+		text: `Your OTP code is ${otp}. It will expire in 2 minutes.`
 	};
 
 	try {
@@ -34,72 +34,138 @@ async function otpSend(email, otp) {
 }
 
 
+// exports.sendOtp = async (req, res) => {
+// 	try {
+// 		const { email,deviceId, deviceOs,registeration_type } = req.body;
+// 		console.log(req.body,"req.body");
+// 		if (!email || !deviceId || !deviceOs || !registeration_type) {
+// 			return res.status(400).json(
+// 				{
+// 					message:'Missing required fields', 
+// 					status: 400,
+// 					success:false,
+// 					error:true
+// 				}
+// 			);
+// 		}
+		
+// 		const result = await otpModel.insertLoginUser(email,deviceId, deviceOs,registeration_type);
+// 		console.log(result[0],"check");
+// 		console.log(result.otp,"otp");
+// 		if(result.result[0][0].status === 1){
+// 			console.log("1");
+// 			console.log(result.otp,"result.otp");
+// 			const mail=await otpSend(email, result.otp);
+// 			console.log(mail,"mail");
+// 			return res.status(200).json(
+// 				{
+// 				 message:result.result[0][0].message, 
+// 				 status: 200,
+// 				 success:true,
+// 				 error:false
+// 				}
+// 				);
+// 		}
+// 		else if(result.result[0][0].status === 3){
+// 			console.log("3");
+// 			res.status(200).json(
+// 				{ message: result.result[0][0].message, 
+// 					status: 400,
+// 					success:false,
+// 					error:true
+// 				});
+// 		}
+// 		else if(result.result[0][0].status === 4){
+// 			console.log("4");
+// 			res.status(200).json(
+// 				{ message: result.result[0][0].message, 
+// 					status: 400,
+// 					success:false,
+// 					error:true
+// 				});
+// 		}
+// 		else
+// 		{ 
+// 			console.log("5");
+// 			console.log(result.otp,"result.otp1");
+// 			const mail=await otpSend(email, result.otp);
+// 			res.status(200).json(
+// 				{ message: result.result[0][0].message, 
+// 					status: 200,
+// 					success:true,
+// 					error:false
+// 				});
+// 		}
+		
+// 	} catch (error) {
+// 		res.status(500).json({ message: 'Internal server error', error: error.message });
+// 	}
+// };
+
+
 exports.sendOtp = async (req, res) => {
-	try {
-		const { email,deviceId, deviceOs,registeration_type } = req.body;
-		console.log(req.body,"req.body");
-		if (!email || !deviceId || !deviceOs || !registeration_type) {
-			return res.status(400).json(
-				{
-					message:'Missing required fields', 
-					status: 400,
-					success:false,
-					error:true
-				}
-			);
-		}
+    try {
+        const { email, deviceId, deviceOs, registeration_type } = req.body;
+
+        console.log("Received Request:", req.body);
+
+        // Validate required fields
+        if (!email || !deviceId || !deviceOs || !registeration_type) {
+            return res.status(400).json({
+                message: "Missing required fields",
+                status: 400,
+                success: false,
+                error: true
+            });
+        }
+
+        // Call stored procedure
+        const result = await otpModel.insertLoginUser(email, deviceId, deviceOs, registeration_type);
+        const loginResponse = result.result?.[0]?.[0];
+
+        console.log("Database Response:", loginResponse);
+
+        if (!loginResponse) {
+            return res.status(500).json({
+                message: "Unexpected response from database",
+                status: 500,
+                success: false,
+                error: true
+            });
+        }
+
+        const { status, message } = loginResponse;
+		console.log(loginResponse,"loginResponse");
 		
-		const result = await otpModel.insertLoginUser(email,deviceId, deviceOs,registeration_type);
-		console.log(result[0],"check");
-		console.log(result.otp,"otp");
-		if(result.result[0][0].status === 1){
-			console.log("1");
-			console.log(result.otp,"result.otp");
-			const mail=await otpSend(email, result.otp);
-			console.log(mail,"mail");
-			return res.status(200).json(
-				{
-				 message:result.result[0][0].message, 
-				 status: 200,
-				 success:false,
-				 error:true
-				}
-				);
-		}
-		else if(result.result[0][0].status === 3){
-			console.log("3");
-			res.status(200).json(
-				{ message: result.result[0][0].message, 
-					status: 400,
-					success:false,
-					error:true
-				});
-		}
-		else if(result.result[0][0].status === 4){
-			console.log("4");
-			res.status(200).json(
-				{ message: result.result[0][0].message, 
-					status: 400,
-					success:false,
-					error:true
-				});
-		}
-		else
-		{ 
-			console.log("5");
-			console.log(result.otp,"result.otp1");
-			const mail=await otpSend(email, result.otp);
-			res.status(200).json(
-				{ message: result.result[0][0].message, 
-					status: 200,
-					success:true,
-					error:false
-				});
-		}
-		
-	} catch (error) {
-		res.status(500).json({ message: 'Internal server error', error: error.message });
-	}
+        // Handle different response statuses
+        if (status === 1) {
+            console.log("OTP Sent:", result.otp);
+            await otpSend(email, result.otp);
+            return res.status(200).json({
+                message,
+                status: 200,
+                success: true,
+                error: false
+            });
+        }
+
+        // If status is 3 or 4, return error response WITHOUT sending OTP
+        return res.status(400).json({
+            message,
+            status: 400,
+            success: false,
+            error: true
+        });
+
+    } catch (error) {
+        console.error("Error in sendOtp:", error);
+        res.status(500).json({
+            message: "Internal server error",
+            status: 500,
+            success: false,
+            error: error.message
+        });
+    }
 };
 
 
@@ -226,19 +292,35 @@ exports.fetchLookupData = async (req, res) => {
 	});
   };
 
-exports.deactivateUser = async (req, res) => {
+  exports.deactivateUser = async (req, res) => {
     try {
-        const { userId, role } = req.body;
-
-        if (!userId || !role) {
-            return res.status(400).json({ message: "userId and role are required" });
+        const { email, role } = req.query; // Get values from query parameters
+ 
+        if (!email || !role) {
+            return res.status(400).json({ 
+                message: "Email and role are required", 
+                status: 400,
+                success: false,
+                error: true 
+            });
         }
-
-        await otpModel.deactivateUser(userId, role);
-        return res.status(200).json({ message: "User deactivated successfully" });
-
+ 
+        await otpModel.deactivateUser(email, role);
+        return res.status(200).json({ 
+            message: "Account deleted successfully", 
+            status: 200,
+            success: true,
+            error: false 
+        });
+ 
     } catch (error) {
-        return res.status(500).json({ message: "Error deactivating user", error: error.message });
+        return res.status(500).json({ 
+            message: "Error deleting user", 
+            error: error.message,
+            status: 500,
+            success: false,
+            error: true 
+        });
     }
 };
 

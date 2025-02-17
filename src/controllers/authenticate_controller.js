@@ -83,19 +83,19 @@ const authenticate_controller={
 // },
 
 
- login_peacekeeper: async (req, res) => {
+login_peacekeeper: async (req, res) => {
   try {
     const { email, password, device_id, os_type, loginVia, otp } = req.body;
 
     if (loginVia == 1 && (!email || !password)) {
       return res.status(400).json({ success: false, error: true, message: "Email & password are required" });
     }
-    
+
     if (loginVia == 0 && (!email || !otp)) {
       return res.status(400).json({ success: false, error: true, message: "Email & OTP are required" });
     }
 
-    const loginResult = await authenicate_model.peacekeeper_login(req.body);
+    const loginResult = await authenicate_model.peacekeeper_login(req.body, req);
 
     if (!loginResult.success) {
       return res.status(400).json({ success: false, error: true, message: loginResult.message });
@@ -111,6 +111,7 @@ const authenticate_controller={
     return res.status(500).json({ success: false, error: true, message: "Internal Server Error" });
   }
 },
+
   download_badge : async(req,res)=>{
     try{
         

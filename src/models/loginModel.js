@@ -5,22 +5,28 @@ const CryptoJS = require("crypto-js");
 
 
 // Insert OTP into `tbl_user_login_info`
-exports.insertLoginUser = async (email, deviceId, deviceOs,registeration_type) => {
-	console.log("re",registeration_type);
-    console.log(email,"email");
-    
-	try {
-		const otp = Math.random().toString(36).slice(-6).toUpperCase();
-		console.log(otp,"otp");
-		const [result] = await db.promise().query(`CALL USP_INSERT_LOGIN_USER(?, ?,?, ?,?)`, [email, otp, deviceId, deviceOs,registeration_type]);
-		console.log(result);
-		return {result,otp}; // Return the response from the stored procedure
-	} catch (error) {
-		throw error;
-	}
+exports.insertLoginUser = async (email, deviceId, deviceOs, registeration_type) => {
+    try {
+        const otp = Math.random().toString(36).slice(-6).toUpperCase();
+        console.log(`Generated OTP: ${otp}`);
+        
+        const [result] = await db.promise().query(
+            `CALL USP_INSERT_LOGIN_USER(?, ?, ?, ?, ?)`,
+            [email, otp, deviceId, deviceOs, registeration_type]
+        );
+
+        console.log("Stored Procedure Result:", result);
+
+        return { result, otp }; // Return stored procedure response along with OTP
+    } catch (error) {
+        console.error("Database Error:", error);
+        throw error;
+    }
 };
 
-// Verify OTP with 5-minute expiry check
+
+
+// Verify OTP with 
 exports.verifyOtp = async (email, otp) => {
 	try {
 		const [result] = await db.promise().query(`CALL USP_VERIFY_OTP(?, ?)`, [email, otp]);
@@ -59,10 +65,10 @@ exports.getLookupData   = async (lookupdata, callback) => {
     });
   };
 
- exports.deactivateUser = async (userId, role) => {
+  exports.deactivateUser = async (email, role) => {
     return new Promise((resolve, reject) => {
         const sql = "CALL USP_GLOBAL_DEACTIVE_USER(?, ?)";
-        db.query(sql, [userId, role], (err, result) => {
+        db.query(sql, [email, role], (err, result) => {
             if (err) {
                 reject(err);
             } else {
