@@ -1,38 +1,116 @@
+const { json } = require('express');
 const db = require('../../db.config'); 
+const { decrypt, encrypt } = require('../middleware/auth');
+const CryptoJS = require("crypto-js");
+const { error } = require('pdf-lib');
 
 
-const peacekeeper_login = async (parsedData,req, res) => {
+const peacekeeper_login = async (parsedData, req, res) => {
   try {
-    console.log("B"); 
-    const sql = `CALL USP_GLOBAL_PEACEKEEPER_LOGIN(?)`;
-    console.log("C"); 
-    // Execute the query
-    const [result] = await db.promise().query(sql, [parsedData.email]);
-    console.log("D"); 
-    // Logging for debugging
-    console.log("Login Result:", result);
 
-    console.log(result,"ckec")
-    console.log(result[0][0].file_name,"file_name")
-    if (result && result[0] && result[0][0]) {
-      const protocol = "https";
-      result[0][0].file_name = result[0][0].file_name 
-          ? `${protocol}://${req.get("host")}/uploads/${result[0][0].file_name}`
-          : []; 
-          result[0][0].url = result[0][0].url 
-          ? `${protocol}://${req.get("host")}/uploads/batch/photo/${result[0][0].coupon_code}.png`
-          : [];     
-          
-  }
-    // Return the response
-    console.log(result[0][0].file_name,"file_name2")
-    return result;
+    if(parsedData.loginVia == 1){
+      const pwdSql = `CALL USP_GLOBAL_GET_PWD(?)`;
+      const pwdResult = await db.promise().query(pwdSql, [parsedData.email]);
+      
+      if(pwdResult[0][0][0].success == 1){
+        return res.status(401).json({ success: false, error:true, message: "Please generate your password" ,  status: 4 });
+      }
+      if (pwdResult[0][0][0].success == 0) {
+        console.log("User not found!");
+        return res.status(401).json({ success: false, error:true, message: "User not found" });
+      }
+      const encryptedPassword = pwdResult[0][0][0].user_password;
+      async function decrypt(encryptedText) {
+        return JSON.parse(
+          CryptoJS.AES.decrypt(encryptedText, process.env.ENCRYPTION_KEY).toString(
+            CryptoJS.enc.Utf8
+          )
+        );
+      }
+      const decryptedPassword = await decrypt(encryptedPassword);
 
-  } catch (error) {
+      // console.log(encryptedPassword,"encryptedPasswordDBBB");
+      // console.log(decryptedPassword, "Decrypted Stored PasswordNnormal");
+      // console.log(parsedData.password, "incoming Password");
+      // console.log(encryptedPassword, "incoming DB Password");
+
+      if (decryptedPassword === parsedData.password) {
+        const sql = `CALL USP_GLOBAL_PEACEKEEPER_LOGIN(?)`;
+        console.log("C");
+        // console.log(parsedData.email,"parsedData.email");
+        const [result] = await db.promise().query(sql, [parsedData.email]);
+        console.log("D");
+        // console.log("Login Result2:", result);
+    
+        if (result && result[0] && result[0][0]) {
+          const protocol = "https";
+          result[0][0].file_name = result[0][0].file_name
+            ? `${protocol}://${req.get("host")}/uploads/${result[0][0].file_name}`
+            : null;
+          result[0][0].url = result[0][0].url
+            ? `${protocol}://${req.get("host")}/uploads/batch/photo/${result[0][0].coupon_code}.png`
+            : null;
+        }
+    
+        console.log("Login successful!");
+        return result;
+      } 
+
+    }
+    else
+    {
+      const checkLogin = `CALL usp_peace_login(?,?,?,?,?,?)`;
+      console.log("C");
+  
+      // Execute the query
+      const check = await db.promise().query(checkLogin, [
+        parsedData.email,
+        parsedData.password ||null, // Ensure 'encrypted' is properly defined before using
+        parsedData.device_id,
+        parsedData.os_type,
+        parsedData.loginVia,
+        parsedData.otp,
+      ]);
+      console.log(check[0][1][0].status)
+      if(check[0][1][0].status == 1){
+        return res.status(401).json({ 
+          success: false, 
+          error:true,
+          message: check[0][1][0].result
+         });
+      }
+      else
+      {
+        const sql = `CALL USP_GLOBAL_PEACEKEEPER_LOGIN(?)`;
+        console.log("C");
+        console.log(parsedData.email,"parsedData.email");
+        const [result] = await db.promise().query(sql, [parsedData.email]);
+        console.log("D");
+        console.log("Login Result2:", result);
+    
+        if (result && result[0] && result[0][0]) {
+          const protocol = "https";
+          result[0][0].file_name = result[0][0].file_name
+            ? `${protocol}://${req.get("host")}/uploads/${result[0][0].file_name}`
+            : null;
+          result[0][0].url = result[0][0].url
+            ? `${protocol}://${req.get("host")}/uploads/batch/photo/${result[0][0].coupon_code}.png`
+            : null;
+        }
+    
+        console.log("Login successful!");
+        return result;
+      }
+    }
+  } 
+  catch (error) {
     console.error("Database Error:", error);
     return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+
+
 const download_badge = async (req, res) => {
   try {
     console.log("B"); 

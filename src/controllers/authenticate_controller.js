@@ -8,61 +8,72 @@ const qrcode = require('qrcode');
 const { createCanvas, loadImage } = require("canvas");
 const fs = require('fs');
 const sharp = require('sharp');
+const {shortenURL} =require("../middleware/tiny_url");
 const authenticate_controller={
 
-  login_peacekeeper : async(req,res)=>{
-    try{
-        console.log(req.body.encrypted_data,"encrypted_data");
-        const decrypt_details= await decrypt(req.body.encrypted_data);
-        const parsedData = JSON.parse(decrypt_details);
-        console.log(parsedData,"email"); 
+  login_peacekeeper: async (req, res) => {
+    try {
+        const { email, password, device_id, os_type, loginVia, otp } = req.body;
+        console.log(email.length,"email.length");
+        console.log(password.length,"password.length");
+        if (loginVia == 1 && (!email || !password)) {
+          return res.status(400).json({
+            status: 400,
+            success: false,
+            error: true,
+            message: "Email & password are required",
+          });
+        }
+        
+        if (loginVia == 0 && (!email || !otp)) {
+          return res.status(400).json({
+            status: 400,
+            success: false,
+            error: true,
+            message: "Email & OTP are required",
+          });
+        }
+        if (loginVia == 1 && (email || password)) {
+        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+        // console.log(loginResult,"result_login");
+         
+        }
+        const loginResult = await authenicate_model.peacekeeper_login(req.body, req, res);
+        // console.log(loginResult,"loginResult");
+        
+        if (!loginResult || !loginResult[0] || !loginResult[0][0]) {
+            return res.status(500).json({
+                success: false,
+                error: true,
+                message: "Login failed. Please try again."
+            });
+        }
 
-        if(parsedData.email.length ==0)
-        {
+        if (loginResult[0][0].result === "No details found") {
+            return res.status(400).json({
+                success: false,
+                error: true,
+                message: "Invalid login credentials"
+            });
+        }
+
+        const token = jwt.sign({ user_details: loginResult[0][0] }, process.env.SECRET_KEY, { expiresIn: "10h" });
+
+        res.status(200).json({
+            success: true,
+            error: false,
+            data: loginResult[0][0],
+            token: token
+        });
+
+    } catch (error) {
         res.status(500).json({
-          success:false,
-          error:true,
-          message:"email_id is required"
-        })
-        }
-        else
-        {
-          const login_peacekeeper= await authenicate_model.peacekeeper_login(parsedData,req,res);
-          console.log(login_peacekeeper[0][0],"check_controller");
-          if(login_peacekeeper[0][0].result ==="No details found")
-          {
-            res.status(500).json({
-              success:true,
-              error:false,
-              message:login_peacekeeper[0][0].result
-            })
-          }
-          else
-          {
-            console.log(login_peacekeeper[0][0],"login_peacekeeper[0][0]");
-            const theToken = jwt.sign({user_details:login_peacekeeper[0][0]}, process.env.SECRET_KEY, { expiresIn: '10h' });
-            console.log(theToken,"token");
-            const encrypted_token= await encrypt(theToken);
-            const encrypted_data= await encrypt(login_peacekeeper[0][0]);
-            res.status(200).json({
-              success:true,
-              error:false,
-              data:encrypted_data,
-              token:encrypted_token
-            })
-          }
-          
-        }
+            success: false,
+            error: true,
+            message: error.message
+        });
     }
-    catch(error)
-    {
-      res.status(500).json({
-        success:false,
-        error:true,
-        message:error.message
-      })
-    }
-  },
+},
   download_badge : async(req,res)=>{
     try{
         
@@ -814,6 +825,83 @@ const authenticate_controller={
         error: true,
         message: error.message
       })
+    }
+   
+  },
+  tinyurl_QR_code  : async (req, res) => {
+    
+    try
+    {
+      const imagePath = path.join(__dirname, `../uploads/delegate_qr/check.png`);
+      const main_url="https://globaljusticeuat.cylsys.com/delegate-registration?code=COININ-0000001-W";
+      const tiny_url=await shortenURL(main_url);
+      console.log(tiny_url,"tiny_url");
+      async function generateQRCodeWithImage(imagePath, qr_url) {
+        try {
+        
+          const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
+          if (!fs.existsSync(logoPath)) {
+            throw new Error("Logo file is missing at " + logoPath);
+          }
+          const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
+            errorCorrectionLevel: 'H', // High error correction for logo overlay
+            scale: 10,// Scale for higher resolution QR code
+            margin: 1
+          });
+   
+          // Get QR code dimensions
+          const qrDimensions = await sharp(qrCodeBuffer).metadata();
+          const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
+   
+          // Apply circular mask to the logo and enhance quality
+          const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
+   
+          // Process the QR code with the logo overlay
+          await sharp(qrCodeBuffer)
+            .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
+            .composite([{
+              input: logoBuffer,
+              gravity: 'center', // Center the logo in the middle
+              blend: 'over', // Overlay the logo onto the QR code
+            }])
+            .toFile(imagePath); // Save the final image
+   
+          console.log("QR Code with sharp logo saved at:", imagePath);
+        } catch (error) {
+          console.error("Error generating QR code:", error);
+        }
+      }
+   
+      // Function to apply circular mask to the logo and sharpen it
+      async function applyCircleMaskToLogo(logoPath, logoSize) {
+        const logoImage = await sharp(logoPath)
+          .resize(logoSize, logoSize) // Resize logo to desired size
+          .toBuffer();
+   
+        // Create a circular mask for the logo
+        const circleMask = Buffer.from(
+          `<svg width="${logoSize}" height="${logoSize}">
+                <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
+            </svg>`
+        );
+   
+        // Apply circular mask on logo and sharpen the image
+        return sharp(logoImage)
+          .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
+          .sharpen(2) // Apply sharpening for better clarity
+          .toBuffer();
+      }
+   
+      // Example Usage
+      await generateQRCodeWithImage(imagePath,tiny_url);
+    }
+    catch(err)
+    {
+      res.status(500).json({
+        success: false,
+        error: true,
+        message: err.message
+      }) 
     }
    
   }

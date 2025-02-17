@@ -83,6 +83,7 @@ const contactUsRoutes = require("./src/routes/contactUsRoutes");
 const peacekeeperRoutes = require("./src/routes/peacekeeperRoutes");
 const authenicate=require("./src/routes/authenticate_route");
 const invitationRoute=require("./src/routes/invitationRoute");
+const loginRoute=require("./src/routes/loginRoute");
 
 app.get('/', (req, res) => {
 
@@ -108,6 +109,9 @@ app.use("/uploads/batch/photo", express.static("src/uploads/batch_photo"));
 app.use("/uploads/batch_pdf", express.static("src/uploads/batch_pdf"));
 app.use("/middle_ware/photo", express.static("src/middleware/assets/images"));
 app.use("/api/v1", invitationRoute);
+app.use("/api/v1", loginRoute);
+app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
+app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
 
 // Use the peacekeeper routes
 app.use('/api/v1', peacekeeperRoutes);
