@@ -169,7 +169,7 @@ const createDelegateProfile = (req, res) => {
       });
     }
     else if (response.response === "success") {
-      console.log(response,"vvvvvv");
+      console.log(response, "vvvvvv");
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         customer_email: email_id, // Ensure `email` is a valid string
@@ -1264,8 +1264,7 @@ const createDelegateProfile = (req, res) => {
 
       const mailOptions = {
         from: 'Peacekeeper@global-jlp-summit.com',
-        to: email_id,  // Adjust recipient
-        // to: "udayshimpi2000@gmail.com",
+        to: email_id,  
         subject: 'Delegate at the Global Justice Summit.- It`s just one step away',
         html: reference_no.length == 0 ? with_full : with_discount,
 
@@ -1284,7 +1283,7 @@ const createDelegateProfile = (req, res) => {
         success: true,
         error: false,
         url: session.url,
-        delegate_id:response.id,
+        delegate_id: response.id,
         message: "Delegate profile registered successfully.You are now being redirected to the payment gateway."
       });
     } else {
@@ -1336,11 +1335,16 @@ const createNominateProfile = async (req, res) => {
     }
     // If errors exist, return the response
     if (errors.length > 0) {
-      return res.status(400).json({ success: false,error:true,errors:errors[0] });
+      return res.status(400).json({ success: false, error: true, errors: errors[0] });
     }
-   console.log(req.body,"body");
-    // Call the database function
-    const result = await delegateProfileModel.insert_nomination(req,res);
+    console.log(req.body, "body");
+    const result = await delegateProfileModel.insert_nomination(req, res);
+    console.log(result[0].status, "result0");
+    if (result[0].status == 1) {
+      const result = await delegateProfileModel.insert_nomination(req, res);
+    }
+
+
     return res.status(201).json({
       success: true,
       error: false,
@@ -1378,25 +1382,257 @@ function logError(error) {
 const verify_session_status = async (req, res) => {
   try {
     const sessionId = req.body.sessionId;
-
+    console.log("sessionId", sessionId);
     // Retrieve the session details from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log(session, "session");
     console.log("assasasa", session.customer_details.name);
     if (session.payment_status === 'paid') {
-
-      const peacekeeperData = await peacekeeperModel.inserting_transcation_details(session);
+      console.log("session",session.payment_status);
+      const peacekeeperData = await peacekeeperModel.inserting_transcation_details(req, session);
       console.log(peacekeeperData, "peacekeeperData");
       console.log(peacekeeperData[0], "[0][0].result1");
-      //console.log(peacekeeperData[0][0].result,"[0][0].result");
+      console.log(peacekeeperData[0].result, "[0][0].result1");
+
       if (peacekeeperData[0].result === "inserted successfully") {
+           
+        if (peacekeeperData[0].status_id == 0) {
+          console.log(peacekeeperData[0], "peacekeeperData[0]");
+          console.log(peacekeeperData[0].nominations[0].TND_EMAIL, "peacekeeperData[0]");
+          async function generateTicket(data) {
+            for (const entry of data) {
+              const imageName = `${entry.random_id}.png`;
+              const imagePath = path.join(__dirname, "../uploads/ticket_qr", imageName);
+              const qr_url = `${entry.random_id}`;
+
+              async function generateQRCodeWithImage(imagePath, qr_url) {
+                try {
+                  const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png");
+                  const qrCodeBuffer = await qrcode.toBuffer(qr_url, { errorCorrectionLevel: 'H', scale: 10, margin: 1 });
+                  const qrDimensions = await sharp(qrCodeBuffer).metadata();
+                  const logoSize = Math.floor(qrDimensions.width / 4);
+                  const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
+
+                  await sharp(qrCodeBuffer)
+                    .resize(qrDimensions.width, qrDimensions.height)
+                    .composite([{ input: logoBuffer, gravity: 'center', blend: 'over' }])
+                    .toFile(imagePath);
+                } catch (error) {
+                  console.error("Error generating QR code:", error);
+                }
+              }
+
+              async function applyCircleMaskToLogo(logoPath, logoSize) {
+                const logoImage = await sharp(logoPath).resize(logoSize, logoSize).toBuffer();
+                const circleMask = Buffer.from(`<svg width="${logoSize}" height="${logoSize}"><circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" /></svg>`);
+                return sharp(logoImage).composite([{ input: circleMask, blend: 'dest-in' }]).sharpen(2).toBuffer();
+              }
+
+              await generateQRCodeWithImage(imagePath, qr_url);
+              const destFolder = path.join(__dirname, "../uploads/Ticket_photo");
+              const baseImagePath = path.join(__dirname, "../uploads/delegate_qr/FinalTicket.png");
+              console.log(baseImagePath, "baseImagePath");
+
+
+              logError(baseImagePath);
+              const qrCodePath = path.join(__dirname, `../uploads/ticket_qr/${imageName}`);
+              console.log(qrCodePath, "qrCodePath");
+              logError(qrCodePath);
+              // Load Images
+
+              if (fs.existsSync(baseImagePath)) {
+                logError("Exists");
+                logError(baseImagePath);
+
+              }
+              if (fs.existsSync(qrCodePath)) {
+                logError("Exists qrCodePath");
+                logError(qrCodePath);
+
+              }
+              const baseImage = await loadImage(baseImagePath);
+              const qrCode = await loadImage(qrCodePath);
+
+
+              const canvas = createCanvas(baseImage.width, baseImage.height);
+              const ctx = canvas.getContext("2d"); // Move this before using ctx
+
+              ctx.drawImage(baseImage, 0, 0);
+
+              function drawVerticalText(ctx, text, x, y, maxFontSize, color, maxWidth, maxHeight) {
+                ctx.save();
+                ctx.translate(x, y); // Move to position
+                ctx.rotate(-Math.PI / 2); // Rotate counterclockwise
+                ctx.fillStyle = color;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                let fontSize = 175;
+                const minFontSize = 50; // Minimum font size
+                ctx.font = `bold ${fontSize}px Arial`;
+
+                // Dynamic logic to split the text into two balanced lines
+                const words = text.split(" ");
+                let line1 = [];
+                let line2 = [];
+
+                // Divide words roughly into two balanced lines
+                const midIndex = Math.ceil(words.length / 2);
+                line1 = words.slice(0, midIndex).join(" ");
+                line2 = words.slice(midIndex).join(" ");
+
+                // Adjust font size to fit both lines within maxWidth and maxHeight
+                const adjustFontSize = () => {
+                  while (
+                    (ctx.measureText(line1).width > maxHeight ||
+                      ctx.measureText(line2).width > maxHeight ||
+                      fontSize * 2 > maxWidth) &&
+                    fontSize > minFontSize
+                  ) {
+                    fontSize -= 1;
+                    ctx.font = `bold ${fontSize}px Arial`;
+                  }
+                };
+                adjustFontSize();
+
+                // Calculate line spacing
+                const lineHeight = fontSize * 1.2; // Adjust spacing proportional to font size
+                const totalHeight = 2 * lineHeight;
+                const startY = -(totalHeight / 2) + lineHeight / 2;
+
+                // Draw the text lines
+                ctx.fillText(line1, 0, startY); // First line
+                ctx.fillText(line2, 0, startY + lineHeight); // Second line
+                logError(line1);
+                logError(line2);
+                ctx.restore();
+              }
+
+              function drawVerticalText1(ctx, text, x, y, font, color, lineHeight = 160) {
+                ctx.save();
+                ctx.translate(x, y); // Move to position
+                ctx.rotate(-Math.PI / 2); // Rotate counterclockwise
+                ctx.font = `bold ${font}px Arial`; // Font size
+                ctx.fillStyle = color;
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                const lines = text.split("\n");
+                lines.forEach((line, index) => {
+                  ctx.fillText(line, 0, index * lineHeight); // Adjust `lineHeight` for spacing
+                });
+                logError(lines);
+                ctx.restore();
+              }
+
+              var name = `${entry.title} ${entry.first_name} ${entry.last_name}`;
+              drawVerticalText(ctx, name, 400, 1450, 260, "#005B94"); // Name on the left
+              drawVerticalText(ctx, "Delegate", 850, 1350, 200, "green");
+
+              const address = "North Halls\nExhibition\nCentre (DEC),\nExpo City, \nDubai";
+              drawVerticalText1(ctx, address, 6600, 1360, 160, "#005B94");
+
+              const qrCodeX = 6220, qrCodeY = 1600, qrCodeWidth = 1225, qrCodeHeight = 1250;
+              ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+
+              // Save the output image
+              const outputFilePath = path.join(destFolder, `${entry.random_id}.png`);
+              logError(outputFilePath);
+              const out = fs.createWriteStream(outputFilePath);
+              const stream = canvas.createPNGStream();
+              stream.pipe(out);
+
+              out.on("finish", async () => {
+                console.log(`Badge saved as PNG at: ${outputFilePath}`);
+
+                const destFolderPdf = path.join(__dirname, "../uploads/Ticket_pdf");
+                const pdfFilePath = path.join(destFolderPdf, `${entry.random_id}.pdf`);
+                console.log(pdfFilePath, "pdfFilePath");
+                async function pngToPdf() {
+                  console.log("A");
+                  try {
+                    console.log("outputFilePath", outputFilePath);
+                    // Read the PNG file from the "png" folder
+                    const imagePath = outputFilePath;
+                    console.log(imagePath, "imagePath");
+                    const pngBytes = fs.readFileSync(imagePath);
+
+                    // Create a new PDF document
+                    const pdfDoc = await PDFDocument.create();
+                    const pngImage = await pdfDoc.embedPng(pngBytes);
+
+                    // Get original dimensions
+                    let { width, height } = pngImage;
+
+                    // Define the max dimensions for resizing
+                    const maxWidth = 500;  // Adjust this for the desired width
+                    const maxHeight = 700; // Adjust this for the desired height
+
+                    // Resize while maintaining aspect ratio
+                    if (width > maxWidth || height > maxHeight) {
+                      const aspectRatio = width / height;
+                      if (width > height) {
+                        width = maxWidth;
+                        height = maxWidth / aspectRatio;
+                      } else {
+                        height = maxHeight;
+                        width = maxHeight * aspectRatio;
+                      }
+                    }
+
+                    // Add a properly sized page to the PDF
+                    const page = pdfDoc.addPage([width, height]);
+                    page.drawImage(pngImage, {
+                      x: 0,
+                      y: 0,
+                      width,
+                      height,
+                    });
+
+                    // Save the resized PDF
+                    const pdfBytes = await pdfDoc.save();
+                    fs.writeFileSync(pdfFilePath, pdfBytes);
+                    logError("sucess_;pdf");
+                  } catch (error) {
+                    console.error('Error converting PNG to PDF:', error);
+                    logError(error.message);
+                  }
+                }
+                pngToPdf();
+                console.log(`Badge saved as PDF at: ${pdfFilePath}`);
+              });
+            }
+
+          }
+          const nominations = [
+            {
+              title: '',
+              email_id: peacekeeperData[0].nominations[0].TND_EMAIL,
+              last_name: '',
+              random_id: peacekeeperData[0].nominations[0].TND_Nomination_id,
+              first_name: peacekeeperData[0].nominations[0].TND_NOMINATION_NAME
+            }
+          ];
+          const parent_details = [
+            {
+              title: peacekeeperData[0].parent_details[0].title,
+              email_id: peacekeeperData[0].parent_details[0].email_id,
+              last_name: peacekeeperData[0].parent_details[0].last_name,
+              random_id: peacekeeperData[0].parent_details[0].random_id,
+              first_name: peacekeeperData[0].parent_details[0].first_name
+            }
+          ];
+
+          const allDetails = [...nominations, ...parent_details];
+          await generateTicket(allDetails);
+        }
+      }
+      else {
         try {
+          console.log(peacekeeperData[0], "peacekeeperData[0]");
           const imageName = `${peacekeeperData[0].random_id}.png`;
           const imagePath = path.join(__dirname, "../uploads/ticket_qr", imageName);
           const qr_url = `${peacekeeperData[0].qr_url}`;
-
           console.log(qr_url, "qr_url");
-
-
           async function generateQRCodeWithImage(imagePath, qr_url) {
             try {
               // Define paths
@@ -1440,8 +1676,8 @@ const verify_session_status = async (req, res) => {
             // Create a circular mask for the logo
             const circleMask = Buffer.from(
               `<svg width="${logoSize}" height="${logoSize}">
-                    <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
-                </svg>`
+                      <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
+                  </svg>`
             );
 
             // Apply circular mask on logo and sharpen the image
@@ -1572,10 +1808,6 @@ const verify_session_status = async (req, res) => {
 
             const destFolderPdf = path.join(__dirname, "../uploads/Ticket_pdf");
             const pdfFilePath = path.join(destFolderPdf, `${peacekeeperData[0].random_id}.pdf`);
-
-            //  const doc = new PDFDocument();
-
-            // logError(pdfFilePath);
             console.log(pdfFilePath, "pdfFilePath");
             async function pngToPdf() {
               console.log("A");
@@ -1638,7 +1870,6 @@ const verify_session_status = async (req, res) => {
         }
       }
 
-
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -1646,6 +1877,8 @@ const verify_session_status = async (req, res) => {
           pass: 'tusi xeoi hxoz fwwb'
         }
       });
+     
+    
       const bodyContent = `<!DOCTYPE html>
 <html>
   <head>
@@ -1771,7 +2004,6 @@ const verify_session_status = async (req, res) => {
                                         Helvetica, Arial, sans-serif;
                                     "
                                   >
-                                    <p><b>Hi ${peacekeeperData[0].first_name} ${peacekeeperData[0].last_name},</b></p>
                                     <p
                                       style="
                                         font-size: 14px;
@@ -2172,50 +2404,318 @@ const verify_session_status = async (req, res) => {
   </body>
 </html>
 `;
-      // const mailOptions = {
-      //   from: 'Peacekeeper@global-jlp-summit.com',
-      //   to: `${session.customer_email}`,  // Adjust recipient
-      //   // to: "udayshimpi2000@gmail.com",
-      //   subject: 'Payment Confirmation',
-      //   html: bodyContent,
-      //   attachments: [
-      //     {
-      //       filename: `${peacekeeperData[0].random_id}.pdf`, // Assuming coupon_code exists in response[0]
-      //       path: path.join(__dirname, '../uploads/Ticket_pdf', `${peacekeeperData[0].random_id}.pdf`),
-      //       cid: 'qrCodeImage' // Same Content-ID as used in the HTML
-      //     }
-      //   ]
-      // };
 
-      const mailOptions = {
-        from: 'Peacekeeper@global-jlp-summit.com',
-        to: `${session.customer_email}`,
-        //to: "udayshimpi2000@gmail.com",
-        subject: 'Payment Confirmation',
-        html: bodyContent,
-        attachments: [
+      if (peacekeeperData[0].status_id == 0) {
+        const nominations = [
           {
-            filename: `${peacekeeperData[0].random_id}.pdf`,
-            path: path.join(__dirname, '../uploads/Ticket_pdf', `${peacekeeperData[0].random_id}.pdf`)
+            title: '',
+             email_id: peacekeeperData[0].nominations[0].TND_EMAIL,
+            //email_id: "udayshimpi2000@gmail.com",
+            last_name: '',
+            random_id: peacekeeperData[0].nominations[0].TND_Nomination_id,
+            first_name: peacekeeperData[0].nominations[0].TND_NOMINATION_NAME
           }
-        ]
-      };
+        ];
+        const parent_details = [
+          {
+            title: peacekeeperData[0].parent_details[0].title,
+            email_id: peacekeeperData[0].parent_details[0].email_id,
+            last_name: peacekeeperData[0].parent_details[0].last_name,
+            random_id: peacekeeperData[0].parent_details[0].random_id,
+            first_name: peacekeeperData[0].parent_details[0].first_name
+          }
+        ];
+        const allDetails = [...nominations, ...parent_details];
+        const recipients = allDetails.map(user => user.email_id).join(',');
 
+        const mailOptions = {
+          from: 'Peacekeeper@global-jlp-summit.com',
+          to: recipients,
+          subject: 'Payment Confirmation',
+          html: bodyContent,
+          attachments: allDetails.map(user => ({
+            filename: `${user.random_id}.pdf`,
+            path: path.join(__dirname, '../uploads/Ticket_pdf', `${user.random_id}.pdf`)
+          }))
+        };
 
+          await transporter.sendMail(mailOptions, (error, info) => {
+            if (error) console.error('Error sending email:', error);
+            else console.log('Email sent: ' + info.response);
+          });
+        // });
+      }
+      else {
+        console.log(peacekeeperData[0],"check_delgate");
+        try{
+        const imageName = `${peacekeeperData[0].random_id}.png`;
+        const imagePath = path.join(__dirname, "../uploads/ticket_qr", imageName);
+        const qr_url = `${peacekeeperData[0].qr_url}`;
+        console.log(qr_url, "qr_url");
+        async function generateQRCodeWithImage(imagePath, qr_url) {
+          try {
+            // Define paths
+            const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error('Error sending email:', error);
-        } else {
-          console.log('Email sent: ' + info.response);
+            const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
+              errorCorrectionLevel: 'H', // High error correction for logo overlay
+              scale: 10,// Scale for higher resolution QR code
+              margin: 1
+            });
+
+            // Get QR code dimensions
+            const qrDimensions = await sharp(qrCodeBuffer).metadata();
+            const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
+
+            // Apply circular mask to the logo and enhance quality
+            const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
+
+            // Process the QR code with the logo overlay
+            await sharp(qrCodeBuffer)
+              .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
+              .composite([{
+                input: logoBuffer,
+                gravity: 'center', // Center the logo in the middle
+                blend: 'over', // Overlay the logo onto the QR code
+              }])
+              .toFile(imagePath); // Save the final image
+
+            console.log("QR Code with sharp logo saved at:", imagePath);
+          } catch (error) {
+            console.error("Error generating QR code:", error);
+          }
         }
-      });
+
+        // Function to apply circular mask to the logo and sharpen it
+        async function applyCircleMaskToLogo(logoPath, logoSize) {
+          const logoImage = await sharp(logoPath)
+            .resize(logoSize, logoSize) // Resize logo to desired size
+            .toBuffer();
+
+          // Create a circular mask for the logo
+          const circleMask = Buffer.from(
+            `<svg width="${logoSize}" height="${logoSize}">
+                    <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
+                </svg>`
+          );
+
+          // Apply circular mask on logo and sharpen the image
+          return sharp(logoImage)
+            .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
+            .sharpen(2) // Apply sharpening for better clarity
+            .toBuffer();
+        }
+
+        // Example Usage
+        await generateQRCodeWithImage(imagePath, qr_url);
+
+        const destFolder = path.join(__dirname, "../uploads/Ticket_photo");
+        const baseImagePath = path.join(__dirname, "../uploads/delegate_qr/FinalTicket.png");
+        console.log(baseImagePath, "baseImagePath");
+
+        logError(baseImagePath);
+        const qrCodePath = path.join(__dirname, `../uploads/ticket_qr/${peacekeeperData[0].random_id}.png`);
+        console.log(qrCodePath, "qrCodePath");
+        logError(qrCodePath);
+        // Load Images
+
+        if (fs.existsSync(baseImagePath)) {
+          logError("Exists");
+          logError(baseImagePath);
+
+        }
+        if (fs.existsSync(qrCodePath)) {
+          logError("Exists qrCodePath");
+          logError(qrCodePath);
+
+        }
+        const baseImage = await loadImage(baseImagePath);
+        const qrCode = await loadImage(qrCodePath);
+
+
+        const canvas = createCanvas(baseImage.width, baseImage.height);
+        const ctx = canvas.getContext("2d"); // Move this before using ctx
+
+        ctx.drawImage(baseImage, 0, 0);
+
+        function drawVerticalText(ctx, text, x, y, maxFontSize, color, maxWidth, maxHeight) {
+          ctx.save();
+          ctx.translate(x, y); // Move to position
+          ctx.rotate(-Math.PI / 2); // Rotate counterclockwise
+          ctx.fillStyle = color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          let fontSize = 175;
+          const minFontSize = 50; // Minimum font size
+          ctx.font = `bold ${fontSize}px Arial`;
+
+          // Dynamic logic to split the text into two balanced lines
+          const words = text.split(" ");
+          let line1 = [];
+          let line2 = [];
+
+          // Divide words roughly into two balanced lines
+          const midIndex = Math.ceil(words.length / 2);
+          line1 = words.slice(0, midIndex).join(" ");
+          line2 = words.slice(midIndex).join(" ");
+
+          // Adjust font size to fit both lines within maxWidth and maxHeight
+          const adjustFontSize = () => {
+            while (
+              (ctx.measureText(line1).width > maxHeight ||
+                ctx.measureText(line2).width > maxHeight ||
+                fontSize * 2 > maxWidth) &&
+              fontSize > minFontSize
+            ) {
+              fontSize -= 1;
+              ctx.font = `bold ${fontSize}px Arial`;
+            }
+          };
+          adjustFontSize();
+
+          // Calculate line spacing
+          const lineHeight = fontSize * 1.2; // Adjust spacing proportional to font size
+          const totalHeight = 2 * lineHeight;
+          const startY = -(totalHeight / 2) + lineHeight / 2;
+
+          // Draw the text lines
+          ctx.fillText(line1, 0, startY); // First line
+          ctx.fillText(line2, 0, startY + lineHeight); // Second line
+          logError(line1);
+          logError(line2);
+          ctx.restore();
+        }
+
+        //   logError("hi");
+
+        function drawVerticalText1(ctx, text, x, y, font, color, lineHeight = 160) {
+          ctx.save();
+          ctx.translate(x, y); // Move to position
+          ctx.rotate(-Math.PI / 2); // Rotate counterclockwise
+          ctx.font = `bold ${font}px Arial`; // Font size
+          ctx.fillStyle = color;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const lines = text.split("\n");
+          lines.forEach((line, index) => {
+            ctx.fillText(line, 0, index * lineHeight); // Adjust `lineHeight` for spacing
+          });
+          logError(lines);
+          ctx.restore();
+        }
+
+        var name = `${peacekeeperData[0].title}. ${peacekeeperData[0].first_name} ${peacekeeperData[0].last_name}`;
+        drawVerticalText(ctx, name, 400, 1450, 260, "#005B94"); // Name on the left
+        drawVerticalText(ctx, "Delegate", 850, 1350, 200, "green");
+
+        const address = "North Halls\nExhibition\nCentre (DEC),\nExpo City, \nDubai";
+        drawVerticalText1(ctx, address, 6600, 1360, 160, "#005B94");
+
+        const qrCodeX = 6220, qrCodeY = 1600, qrCodeWidth = 1225, qrCodeHeight = 1250;
+        ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+
+        // Save the output image
+        const outputFilePath = path.join(destFolder, `${peacekeeperData[0].random_id}.png`);
+        logError(outputFilePath);
+        const out = fs.createWriteStream(outputFilePath);
+        const stream = canvas.createPNGStream();
+        stream.pipe(out);
+
+        out.on("finish", async () => {
+          console.log(`Badge saved as PNG at: ${outputFilePath}`);
+
+          const destFolderPdf = path.join(__dirname, "../uploads/Ticket_pdf");
+          const pdfFilePath = path.join(destFolderPdf, `${peacekeeperData[0].random_id}.pdf`);
+          console.log(pdfFilePath, "pdfFilePath");
+          async function pngToPdf() {
+            console.log("A");
+            try {
+              console.log("outputFilePath", outputFilePath);
+              // Read the PNG file from the "png" folder
+              const imagePath = outputFilePath;
+              console.log(imagePath, "imagePath");
+              const pngBytes = fs.readFileSync(imagePath);
+
+              // Create a new PDF document
+              const pdfDoc = await PDFDocument.create();
+              const pngImage = await pdfDoc.embedPng(pngBytes);
+
+              // Get original dimensions
+              let { width, height } = pngImage;
+
+              // Define the max dimensions for resizing
+              const maxWidth = 500;  // Adjust this for the desired width
+              const maxHeight = 700; // Adjust this for the desired height
+
+              // Resize while maintaining aspect ratio
+              if (width > maxWidth || height > maxHeight) {
+                const aspectRatio = width / height;
+                if (width > height) {
+                  width = maxWidth;
+                  height = maxWidth / aspectRatio;
+                } else {
+                  height = maxHeight;
+                  width = maxHeight * aspectRatio;
+                }
+              }
+
+              // Add a properly sized page to the PDF
+              const page = pdfDoc.addPage([width, height]);
+              page.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width,
+                height,
+              });
+
+              // Save the resized PDF
+              const pdfBytes = await pdfDoc.save();
+              fs.writeFileSync(pdfFilePath, pdfBytes);
+              logError("sucess_;pdf");
+            } catch (error) {
+              console.error('Error converting PNG to PDF:', error);
+              logError(error.message);
+            }
+          }
+          pngToPdf();
+          console.log(`Badge saved as PDF at: ${pdfFilePath}`);
+        });
+
+      }
+      catch (err) {
+        console.error("Error generating ticket:", err);
+        logError(err.message);
+      }
+        const mailOptions = {
+          from: 'Peacekeeper@global-jlp-summit.com',
+          //to: `${session.customer_email}`,
+          to: "udayshimpi2000@gmail.com",
+          subject: 'Payment Confirmation',
+          html: bodyContent,
+          attachments: [
+            {
+              filename: `${peacekeeperData[0].random_id}.pdf`,
+              path: path.join(__dirname, '../uploads/Ticket_pdf', `${peacekeeperData[0].random_id}.pdf`)
+            }
+          ]
+        };
+        await transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Error sending email:', error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
+      }
+
       res.json({ success: true, session });
-    } else {
+    }
+
+    else {
       res.json({ success: false, message: 'Payment not completed' });
     }
   } catch (error) {
-
     logError(error);
     res.status(500).json({ error: error.message });
   }

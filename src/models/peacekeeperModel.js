@@ -130,7 +130,6 @@ const getAllEmaildetails = (req, callback) => {
     if (err) {
       return callback(err, null);
     }
-
     // Return the fetched results from the procedure
     return callback(null, results[0]); // Assuming the first result set contains the desired data
   });
@@ -140,19 +139,6 @@ const getAllEmaildetails = (req, callback) => {
 const deletePeacekeeperData = (peacekeeperId) => {
   return new Promise((resolve, reject) => {
     const query = 'CALL USP_DELETE_PEACEKEEPER_DETAILS(?)';
-    db.query(query, [peacekeeperId], (error, results) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(results[0]); // Assuming the first result contains the data
-      }
-    });
-  });
-};
-
-const discountPeacekeeperData = (peacekeeperId) => {
-  return new Promise((resolve, reject) => {
-    const query = 'CALL USP_GET_PEACE_KEEPER_DETAILS_new(?)';
     db.query(query, [peacekeeperId], (error, results) => {
       if (error) {
         reject(error);

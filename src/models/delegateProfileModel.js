@@ -103,8 +103,30 @@ const insert_nomination = (req) => {
     });
   };
   
+const get_nomination_details =(req)=>{
+
+    return new Promise((resolve, reject) => {
+        const sql_query = `CALL USP_NOMINATION_DETAILS_GET_NOMINATION_ID(?)`;
+        pool.query(
+          sql_query,
+          [
+            req.body.email,
+          ],
+          (err, result) => {
+            if (err) {
+              console.error("Database Error:", err);
+              return reject({ message: "Database error", error: err });
+            }
+    
+            console.log(result, "Database Result");
+            resolve(result[0]); // Resolve the first result set (if applicable)
+          }
+        );
+      });
+};  
 
 module.exports = {
     insertDelegateProfile,
-    insert_nomination
+    insert_nomination,
+    get_nomination_details
 };

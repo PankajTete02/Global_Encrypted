@@ -13,6 +13,7 @@ require('dotenv').config();
 const { log, error } = require('console');
 const uploadPath = path.join(__dirname, '../uploads/profile_pics');
 const {VerifyToken,encrypt,decrypt}=require("../middleware/auth");
+const {shortenURL} =require("../middleware/tiny_url");
 
 //main
 //const { PDFDocument } = require('pdf-lib');
@@ -556,10 +557,10 @@ const update_Peacekeeper = (req, res) => {
         const imageName = `${response[0].coupon_code}.png`;
         const imagePath = path.join(__dirname, '../uploads/delegate_qr', imageName);
 
-        // const qrCodeBuffer = await qrcode.toBuffer(response[0].qr_code);
-        // console.log(qrCodeBuffer, "qrCodeBuffer")
-        // fs.writeFileSync(imagePath, qrCodeBuffer);
-       
+        peacekeeperModel.tinyurl(req,response[0].qr_code,async(err,response)=>{
+            console.log(response,"check_response");
+            console.log(err,"error");
+        });
         async function generateQRCodeWithImage(imagePath, qr_url) {
           try {
             // Define paths
@@ -615,7 +616,7 @@ const update_Peacekeeper = (req, res) => {
         }
 
         // Example Usage
-        await generateQRCodeWithImage(imagePath, response[0].qr_code);
+        await generateQRCodeWithImage(imagePath, await shortenURL( response[0].qr_code));
       
        
        
@@ -734,12 +735,13 @@ const update_Peacekeeper = (req, res) => {
               y: margin, // Y-coordinate to include the top margin
             });
             doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
-              link: response[0].qr_code, // This makes the link clickable
+              link: await shortenURL(response[0].qr_code), // This makes the link clickable
               underline: true // Optional: underline the link for emphasis
             });
-
-            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
-              link: response[0].qr_code, // This makes the link clickable
+            const pdf_tiny_url=await shortenURL(response[0].qr_code);
+            console.log(pdf_tiny_url,"pdf_tiny_url");
+            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(pdf_tiny_url, 120, 638, {
+              link: await shortenURL(response[0].qr_code), // This makes the link clickable
               underline: true, // Optional: underline the link for emphasis
             });
 
@@ -782,24 +784,12 @@ const update_Peacekeeper = (req, res) => {
           ctx.fillStyle = "black";
           ctx.fillText(personData.country, 440, 350);
 
-          // ctx.fillStyle = "#17598e";
-          // ctx.fillText("Mobile:", 200, 420);
-          // ctx.fillStyle = "black";
-          // ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
-
-          // ctx.fillStyle = "#17598e";
-          // ctx.fillText("E-mail:", 200, 500);
-          // ctx.fillStyle = "black";
-          // ctx.fillText(personData.email, 400, 500);
 
           ctx.fillStyle = "#17598e";
           ctx.fillText("ID No:", 200, 420);
           ctx.fillStyle = "black";
           ctx.fillText(personData.idNo, 400, 420);
 
-
-          // ctx.fillStyle = "6px Arial #17598e";
-          // ctx.fillText(response[0].qr_code, 100, 2440);
           // Add QR code
           const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
           ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
@@ -826,12 +816,13 @@ const update_Peacekeeper = (req, res) => {
               y: margin, // Y-coordinate to include the top margin
             });
             doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
-              link: response[0].qr_code, // This makes the link clickable
+              link: await shortenURL(response[0].qr_code), // This makes the link clickable
               underline: true // Optional: underline the link for emphasis
-            });
-
-            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
-              link: response[0].qr_code, // This makes the link clickable
+            }); 
+            const pdf_tiny_url=await shortenURL(response[0].qr_code);
+            console.log(pdf_tiny_url,"pdf_tiny_url");
+            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(pdf_tiny_url, 120, 638, {
+              link: await shortenURL(response[0].qr_code), // This makes the link clickable
               underline: true, // Optional: underline the link for emphasis
             });
 

@@ -9,6 +9,8 @@ const path = require('path');
 const IP=require('ip');
 const { log, count } = require("console");
 const {VerifyToken,encrypt}=require("../middleware/auth");
+
+
 exports.Delegatedetails = async function (req, res) {
   const new_details = new Delegatedetails(req.body);
   userEmail = req.body.email_id;
@@ -26,16 +28,6 @@ exports.Delegatedetails = async function (req, res) {
         }
       });
     });
-    // Delegatedetails.create(new_details, function (err, details) {
-    //   if (err) {
-    //     console.log(err);
-    //     return res.status(400).json({
-    //       status: false,
-    //       error: true,
-    //       message: "Something went wrong. Please try again.",
-
-    //     });
-    //   }
     if (details[0][0].response === "fail") {
       console.log(userEmail, username);
       return res.json({
