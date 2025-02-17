@@ -8,6 +8,7 @@ const qrcode = require('qrcode');
 const { createCanvas, loadImage } = require("canvas");
 const fs = require('fs');
 const sharp = require('sharp');
+const {shortenURL} =require("../middleware/tiny_url");
 const authenticate_controller={
 
   login_peacekeeper: async (req, res) => {
@@ -824,6 +825,83 @@ const authenticate_controller={
         error: true,
         message: error.message
       })
+    }
+   
+  },
+  tinyurl_QR_code  : async (req, res) => {
+    
+    try
+    {
+      const imagePath = path.join(__dirname, `../uploads/delegate_qr/check.png`);
+      const main_url="https://globaljusticeuat.cylsys.com/delegate-registration?code=COININ-0000001-W";
+      const tiny_url=await shortenURL(main_url);
+      console.log(tiny_url,"tiny_url");
+      async function generateQRCodeWithImage(imagePath, qr_url) {
+        try {
+        
+          const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
+          if (!fs.existsSync(logoPath)) {
+            throw new Error("Logo file is missing at " + logoPath);
+          }
+          const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
+            errorCorrectionLevel: 'H', // High error correction for logo overlay
+            scale: 10,// Scale for higher resolution QR code
+            margin: 1
+          });
+   
+          // Get QR code dimensions
+          const qrDimensions = await sharp(qrCodeBuffer).metadata();
+          const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
+   
+          // Apply circular mask to the logo and enhance quality
+          const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
+   
+          // Process the QR code with the logo overlay
+          await sharp(qrCodeBuffer)
+            .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
+            .composite([{
+              input: logoBuffer,
+              gravity: 'center', // Center the logo in the middle
+              blend: 'over', // Overlay the logo onto the QR code
+            }])
+            .toFile(imagePath); // Save the final image
+   
+          console.log("QR Code with sharp logo saved at:", imagePath);
+        } catch (error) {
+          console.error("Error generating QR code:", error);
+        }
+      }
+   
+      // Function to apply circular mask to the logo and sharpen it
+      async function applyCircleMaskToLogo(logoPath, logoSize) {
+        const logoImage = await sharp(logoPath)
+          .resize(logoSize, logoSize) // Resize logo to desired size
+          .toBuffer();
+   
+        // Create a circular mask for the logo
+        const circleMask = Buffer.from(
+          `<svg width="${logoSize}" height="${logoSize}">
+                <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
+            </svg>`
+        );
+   
+        // Apply circular mask on logo and sharpen the image
+        return sharp(logoImage)
+          .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
+          .sharpen(2) // Apply sharpening for better clarity
+          .toBuffer();
+      }
+   
+      // Example Usage
+      await generateQRCodeWithImage(imagePath,tiny_url);
+    }
+    catch(err)
+    {
+      res.status(500).json({
+        success: false,
+        error: true,
+        message: err.message
+      }) 
     }
    
   }
