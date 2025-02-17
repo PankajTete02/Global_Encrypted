@@ -148,7 +148,18 @@ const deletePeacekeeperData = (peacekeeperId) => {
     });
   });
 };
-
+const discountPeacekeeperData = (peacekeeperId) => {
+  return new Promise((resolve, reject) => {
+    const query = 'CALL USP_GET_PEACE_KEEPER_DETAILS_new(?)';
+    db.query(query, [peacekeeperId], (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results[0]); // Assuming the first result contains the data
+      }
+    });
+  });
+};
 const sessionPeacekeeperData = (peacekeeperId) => {
   return new Promise((resolve, reject) => {
     const query = 'CALL USP_GLOBAL_GET_DETAILS_FOR_SESSION(?)';
