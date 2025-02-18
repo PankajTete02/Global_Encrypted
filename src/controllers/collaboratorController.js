@@ -1,4 +1,6 @@
 const CollaboratorModel = require('../models/collaboratorModel');
+const validateCollaborator = require("../middleware/validationCollaborator");
+const { checkEmailExists } = require("../models/collaboratorModel");
 
 // API to get all collaborators
 exports.getAllCollaborator = (req, res) => {
@@ -34,18 +36,52 @@ exports.getCollaboratorById = (req, res) => {
 
 // API to create a collaborator
 exports.createCollaborator = (req, res) => {
-  CollaboratorModel.create(req.body, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: 'Collaborator created'});
+  const { email } = req.body;
+
+  // Check if email exists before validation
+  checkEmailExists(email,null, (err, exists) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+    if (exists) {
+      return res.status(400).json({ message: "Email already exists." });
+    }
+
+    CollaboratorModel.create(req.body, (err, result) => {
+  
+      //generate tiny url
+    
+      //generate QR code
+    
+      //generate batch
+    
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({ message: 'Collaborator created'});
+      });
   });
+
+ 
 };
 
 // API to update a collaborator
 exports.updateCollaborator = (req, res) => {
+  const { email } = req.body;
+
+  // Check if email exists before validation
+  checkEmailExists(email, req.params.id, (err, exists) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+    if (exists) {
+      return res.status(400).json({ message: "Email already exists." });
+    }
+    
   CollaboratorModel.update(req.params.id, req.body, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Collaborator updated' });
   });
+  });
+
 };
 
 // API to delete a collaborator

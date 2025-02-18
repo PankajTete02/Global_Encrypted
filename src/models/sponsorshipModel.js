@@ -108,6 +108,29 @@ const SponsorshipModel = {
       return callback(null, results);
     });
   },
+
+  // Check if email exists using the stored procedure
+  checkEmailExists: (email,id, callback) => {
+    const sql = "CALL CheckEmailExistsSponsorship(?,?, @existsFlag)";
+    
+    db.query(sql, [email,id], (err) => {
+      if (err) {
+        console.error("Error checking email:", err);
+        return callback(err, null);
+      }
+  
+      // Retrieve the existsFlag value
+      db.query("SELECT @existsFlag AS existsFlag", (err, result) => {
+        if (err) {
+          console.error("Error retrieving existsFlag:", err);
+          return callback(err, null);
+        }
+
+        // Return true if email exists, false otherwise
+        return callback(null, result[0].existsFlag === 1);
+      });
+    });
+  }
 };
 
 module.exports = SponsorshipModel;
