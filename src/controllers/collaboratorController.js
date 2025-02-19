@@ -1,93 +1,88 @@
 const CollaboratorModel = require('../models/collaboratorModel');
-const validateCollaborator = require("../middleware/validationCollaborator");
-const { checkEmailExists } = require("../models/collaboratorModel");
+const shortenURL = require("../middleware/tiny_url");
+const {generateQRCodeWithImage, generateBadge} = require("../middleware/helper");
 
 // API to get all collaborators
-exports.getAllCollaborator = (req, res) => {
-  let { page, limit, sort, order, search } = req.query;
-  page = parseInt(page) || 1;
-  limit = parseInt(limit) || 25;
-  const offset = (page - 1) * limit;
-  sort = sort || 'created_at';
-  order = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-  search = search || '';
+exports.getAllCollaborator = async (req, res) => {
+  try {
+    let { page, limit, sort, order, search } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 25;
+    const offset = (page - 1) * limit;
+    sort = sort || 'created_at';
+    order = order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    search = search || '';
 
-  CollaboratorModel.getTotalCount(search, (err, countResult) => {
-    if (err) return res.status(500).json({ error: err.message });
-
+    const countResult = await CollaboratorModel.getTotalCount(search);
     const totalItems = countResult[0].total;
 
-    CollaboratorModel.getAll(search, sort, order, limit, offset, (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-
-      res.json({ totalItems, page, limit, data: results });
-    });
-  });
+    const results = await CollaboratorModel.getAll(search, sort, order, limit, offset);
+    res.json({ totalItems, page, limit, data: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // API to get collaborator by ID
-exports.getCollaboratorById = (req, res) => {
-  CollaboratorModel.getById(req.params.id, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+exports.getCollaboratorById = async (req, res) => {
+  try {
+    const result = await CollaboratorModel.getById(req.params.id);
     if (!result.length) return res.status(404).json({ error: 'Collaborator not found' });
     res.json(result[0]);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // API to create a collaborator
-exports.createCollaborator = (req, res) => {
-  const { email } = req.body;
+exports.createCollaborator = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-  // Check if email exists before validation
-  checkEmailExists(email,null, (err, exists) => {
-    if (err) {
-      return res.status(500).json({ message: "Database error", error: err });
-    }
-    if (exists) {
-      return res.status(400).json({ message: "Email already exists." });
-    }
+    // Check if email exists
+    const exists = await CollaboratorModel.checkEmailExists(email, null);
+    if (exists) return res.status(400).json({ message: "Email already exists." });
 
-    CollaboratorModel.create(req.body, (err, result) => {
-  
-      //generate tiny url
-    
-      //generate QR code
-    
-      //generate batch
-    
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ message: 'Collaborator created'});
-      });
-  });
+    const result = await CollaboratorModel.create(req.body);
 
- 
+    // Generate tiny URL
+    const tiny_url = await shortenURL(result.qr_code_url);
+
+    //generate qr
+    await generateQRCodeWithImage('',tiny_url);
+
+    //generate batch image
+    //generate batch pdf
+    //await generateBadge()
+
+    res.status(201).json({ message: 'Collaborator created', tiny_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // API to update a collaborator
-exports.updateCollaborator = (req, res) => {
-  const { email } = req.body;
-
-  // Check if email exists before validation
-  checkEmailExists(email, req.params.id, (err, exists) => {
-    if (err) {
-      return res.status(500).json({ message: "Database error", error: err });
-    }
-    if (exists) {
-      return res.status(400).json({ message: "Email already exists." });
-    }
+exports.updateCollaborator = async (req, res) => {
+  try {
+    const { email } = req.body;
     
-  CollaboratorModel.update(req.params.id, req.body, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Collaborator updated' });
-  });
-  });
+    // Check if email exists
+    const exists = await CollaboratorModel.checkEmailExists(email, req.params.id);
+    if (exists) return res.status(400).json({ message: "Email already exists." });
 
+    await CollaboratorModel.update(req.params.id, req.body);
+    res.json({ message: 'Collaborator updated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // API to delete a collaborator
-exports.deleteCollaborator = (req, res) => {
-  CollaboratorModel.delete(req.params.id, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+exports.deleteCollaborator = async (req, res) => {
+  try {
+    await CollaboratorModel.delete(req.params.id);
     res.json({ message: 'Collaborator deleted' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

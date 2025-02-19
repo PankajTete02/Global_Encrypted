@@ -3,47 +3,32 @@ const db = require("../../db.config");
 const CollaboratorModel = {
 
   // Get All Collaborators with Pagination, Sorting & Searching
-  getAll: (search, sort, order, limit, offset, callback) => {
-    let sql = `CALL GetAllCollaborators(?, ?, ?, ?, ?)`;
-    db.query(sql, [search, sort, order, limit, offset], (err, results) => {
-      if (err) {
-        console.error("Error getting collaborators:", err);
-        return callback(err, null);
-      }
-      return callback(null, results[0]);
-    });
+  getAll: async (search, sort, order, limit, offset) => {
+    const sql = `CALL GetAllCollaborators(?, ?, ?, ?, ?)`;
+    const [results] = await db.promise().query(sql, [search, sort, order, limit, offset]);
+    return results[0];
   },
 
   // Get Total Count for Pagination
-  getTotalCount: (search, callback) => {
-    let sql = `CALL GetCollaboratorTotalCount(?)`;
-    db.query(sql, [search], (err, results) => {
-      if (err) {
-        console.error("Error getting total count:", err);
-        return callback(err, null);
-      }
-      return callback(null, results[0]);
-    });
+  getTotalCount: async (search) => {
+    const sql = `CALL GetCollaboratorTotalCount(?)`;
+    const [results] = await db.promise().query(sql, [search]);
+    return results[0];
   },
 
   // Get Collaborator by ID
-  getById: (id, callback) => {
-    let sql = `CALL GetCollaboratorById(?)`;
-    db.query(sql, [id], (err, results) => {
-      if (err) {
-        console.error("Error getting collaborator by ID:", err);
-        return callback(err, null);
-      }
-      return callback(null, results[0]);
-    });
+  getById: async (id) => {
+    const sql = `CALL GetCollaboratorById(?)`;
+    const [results] = await db.promise().query(sql, [id]);
+    return results[0];
   },
 
   // Create a Collaborator
-  create: (data, callback) => {
-    let sql = `CALL CreateCollaboratorNew(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.query(sql, [
+  create: async (data) => {
+    const sql = `CALL CreateCollaboratorNew(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const [results] = await db.promise().query(sql, [
       data.full_name,
-      data.dob,            // Ensure dob is included here
+      data.dob,
       data.email,
       data.mobile_no,
       data.country_id,
@@ -54,19 +39,14 @@ const CollaboratorModel = {
       data.domain_url,
       data.peacekeeper_id,
       data.peacekeeper_ref_code
-    ], (err, results) => {
-      if (err) {
-        console.error("Error creating collaborator:", err);
-        return callback(err, null);
-      }
-      return callback(null, results);
-    });
+    ]);
+    return results;
   },
 
   // Update a Collaborator
-  update: (id, data, callback) => {
-    let sql = `CALL UpdateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.query(sql, [
+  update: async (id, data) => {
+    const sql = `CALL UpdateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    await db.promise().query(sql, [
       id,
       data.full_name,
       data.dob,
@@ -76,48 +56,22 @@ const CollaboratorModel = {
       data.country,
       data.is_active,
       data.logo_image
-    ], (err, results) => {
-      if (err) {
-        console.error("Error updating collaborator:", err);
-        return callback(err, null);
-      }
-      return callback(null, results);
-    });
+    ]);
   },
 
   // Delete a Collaborator
-  delete: (id, callback) => {
-    let sql = `CALL DeleteCollaborator(?)`;
-    db.query(sql, [id], (err, results) => {
-      if (err) {
-        console.error("Error deleting collaborator:", err);
-        return callback(err, null);
-      }
-      return callback(null, results);
-    });
+  delete: async (id) => {
+    const sql = `CALL DeleteCollaborator(?)`;
+    await db.promise().query(sql, [id]);
   },
 
   // Check if email exists using the stored procedure
-  checkEmailExists: (email,id,callback) => {
-    const sql = "CALL CheckEmailExistsCollaborator(?,?, @existsFlag)";
+  checkEmailExists: async (email, id) => {
+    const sql = "CALL CheckEmailExistsCollaborator(?, ?)";
+    const [results] = await db.promise().query(sql, [email, id]);
     
-    db.query(sql, [email,id], (err) => {
-      if (err) {
-        console.error("Error checking email:", err);
-        return callback(err, null);
-      }
-  
-      // Retrieve the existsFlag value
-      db.query("SELECT @existsFlag AS existsFlag", (err, result) => {
-        if (err) {
-          console.error("Error retrieving existsFlag:", err);
-          return callback(err, null);
-        }
-
-        // Return true if email exists, false otherwise
-        return callback(null, result[0].existsFlag === 1);
-      });
-    });
+    // Ensure result exists
+    return results[0]?.[0]?.existsFlag === 1;
   }
 
 };
