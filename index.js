@@ -110,6 +110,11 @@ app.use("/uploads/batch_pdf", express.static("src/uploads/batch_pdf"));
 app.use("/middle_ware/photo", express.static("src/middleware/assets/images"));
 app.use("/api/v1", invitationRoute);
 
+
+app.use("/collaborator/qr", express.static("src/uploads/collaborator/qr"));
+app.use("/collaborator/batch/photo", express.static("src/uploads/collaborator/batch/image"));
+app.use("/collaborator/batch/pdf", express.static("src/uploads/collaborator/batch/pdf"));
+
 app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
 app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
 
