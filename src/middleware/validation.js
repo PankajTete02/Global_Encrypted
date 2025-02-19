@@ -7,6 +7,7 @@ const emailPattern = /^[A-Za-z0-9]+([._%+-]*[A-Za-z0-9]+)*@[A-Za-z0-9.-]+\.[A-Za
 
 const sponsorshipSchema = Joi.object({
   sponsorship_type: Joi.string()
+    .trim()
     .valid("patron", "partner")
     .required()
     .messages({
@@ -15,6 +16,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   sponsorship_name: Joi.string()
+    .trim()
     .pattern(namePattern)
     .required()
     .messages({
@@ -23,6 +25,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   poc_name: Joi.string()
+    .trim()
     .pattern(namePattern)
     .required()
     .messages({
@@ -31,6 +34,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   poc_mobile: Joi.string()
+    .trim()
     .pattern(mobilePattern)
     .required()
     .messages({
@@ -39,6 +43,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   poc_email: Joi.string()
+    .trim()
     .pattern(emailPattern)
     .required()
     .messages({
@@ -51,6 +56,7 @@ const sponsorshipSchema = Joi.object({
     .messages({ "any.required": "Country ID is required." }),
 
   country: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "Country name is required." }),
 
@@ -59,6 +65,7 @@ const sponsorshipSchema = Joi.object({
     .messages({ "any.required": "State ID is required." }),
 
   state: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "State name is required." }),
 
@@ -67,10 +74,12 @@ const sponsorshipSchema = Joi.object({
     .messages({ "any.required": "City ID is required." }),
 
   city: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "City name is required." }),
 
   address: Joi.string()
+    .trim()
     .pattern(addressPattern)
     .required()
     .messages({
@@ -79,6 +88,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   ref_by: Joi.string()
+    .trim()
     .valid("peacekeeper", "other")
     .allow(null, "")
     .optional()
@@ -87,6 +97,7 @@ const sponsorshipSchema = Joi.object({
     }),
 
   peacekeeper_other_name: Joi.string()
+    .trim()
     .allow(null, "")
     .optional(),
 
@@ -96,7 +107,7 @@ const sponsorshipSchema = Joi.object({
 
   is_active: Joi.number()
     .valid(0, 1)
-    .default(0)
+    .default(1)
     .messages({
       "any.only": "is_active must be either 0 (inactive) or 1 (active).",
     }),

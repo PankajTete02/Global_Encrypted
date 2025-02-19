@@ -25,7 +25,7 @@ const CollaboratorModel = {
 
   // Create a Collaborator
   create: async (data) => {
-    const sql = `CALL CreateCollaboratorNew(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `CALL CreateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const [results] = await db.promise().query(sql, [
       data.full_name,
       data.dob,
@@ -46,7 +46,7 @@ const CollaboratorModel = {
   // Update a Collaborator
   update: async (id, data) => {
     const sql = `CALL UpdateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    await db.promise().query(sql, [
+    const [results] = await db.promise().query(sql, [
       id,
       data.full_name,
       data.dob,
@@ -57,6 +57,7 @@ const CollaboratorModel = {
       data.is_active,
       data.logo_image
     ]);
+    return results[0][0];
   },
 
   // Delete a Collaborator

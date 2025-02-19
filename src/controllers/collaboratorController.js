@@ -70,8 +70,20 @@ exports.updateCollaborator = async (req, res) => {
     const exists = await CollaboratorModel.checkEmailExists(email, req.params.id);
     if (exists) return res.status(400).json({ message: "Email already exists." });
 
-    await CollaboratorModel.update(req.params.id, req.body);
-    res.json({ message: 'Collaborator updated' });
+    const result =  await CollaboratorModel.update(req.params.id, req.body);
+
+    if(!req.body.is_updated_by_activated){
+    // result.qr_code_url = await shortenURL(result.qr_code_url);
+    const qr_code_path = path.join(__dirname, "../uploads/collaborator/qr/", `${result.qr_unique_code}.png`);
+    const base_image_path = path.join(__dirname, "../uploads/collaborator/base/collaborator_card.png");
+    const destination_path_img = path.join(__dirname, "../uploads/collaborator/batch/image");
+    const destination_path_pdf = path.join(__dirname, "../uploads/collaborator/batch/pdf");
+    
+    [path.join(__dirname, "../uploads/collaborator/base"), destination_path_img, destination_path_pdf].forEach(ensureDirectoryExists);
+
+    await generateBadge({ baseImagePath: base_image_path, response: result, qrCodePath: qr_code_path, destFolderImg: destination_path_img, destFolderPdf: destination_path_pdf });
+    }
+    res.json({ message: 'Collaborator updated', tiny_url: result.qr_code_url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

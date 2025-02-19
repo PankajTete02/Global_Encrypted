@@ -8,6 +8,7 @@ const base64ImageRegex = /^data:image\/(png|jpeg|jpg|svg\+xml);base64,[A-Za-z0-9
 const collaboratorSchema = Joi.object({
   full_name: Joi.string()
     .pattern(namePattern)
+    .trim()
     .required()
     .messages({
       "any.required": "Full name is required.",
@@ -16,12 +17,14 @@ const collaboratorSchema = Joi.object({
 
   dob: Joi.string()
     .required()
+    .trim()
     .messages({
       "any.required": "Date of birth is required.",
     }),
 
   mobile_no: Joi.string()
     .pattern(mobilePattern)
+    .trim()
     .required()
     .messages({
       "any.required": "Mobile number is required.",
@@ -30,6 +33,7 @@ const collaboratorSchema = Joi.object({
 
   email: Joi.string()
     .pattern(emailPattern)
+    .trim()
     .required()
     .messages({
       "any.required": "Email is required.",
@@ -41,14 +45,17 @@ const collaboratorSchema = Joi.object({
     .messages({ "any.required": "Country ID is required." }),
 
   country: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "Country is required." }),
 
   country_code: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "Country code is required." }),
 
   peacekeeper_ref_code: Joi.string()
+    .trim()
     .required()
     .messages({ "any.required": "Ref code is required." }),
 
@@ -57,18 +64,27 @@ const collaboratorSchema = Joi.object({
   .messages({ "any.required": "Peacekeeper code is required." }),
 
   domain_url: Joi.string()
+  .trim()
   .required()
   .messages({ "any.required": "Domain URL is required." }),
 
   is_active: Joi.number()
     .valid(0, 1)
-    .default(0)
+    .default(1)
     .messages({
       "any.only": "is_active must be either 0 (inactive) or 1 (active).",
     }),
 
+  is_updated_by_activated: Joi.number()
+  .valid(0, 1)
+  .default(0)
+  .messages({
+    "any.only": "is_active must be either 0 (inactive) or 1 (active).",
+  }),
+
   logo_image: Joi.string()
     .pattern(base64ImageRegex) // Validate format
+    .trim()
     .required()
     .custom((value, helpers) => {
       // Extract Base64 data (remove metadata)
