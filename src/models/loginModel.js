@@ -16,7 +16,7 @@ exports.insertLoginUser = async (email, deviceId, deviceOs, registeration_type) 
         );
 
         console.log("Stored Procedure Result:", result);
-
+        
         return { result, otp }; // Return stored procedure response along with OTP
     } catch (error) {
         console.error("Database Error:", error);
@@ -68,13 +68,24 @@ exports.getLookupData   = async (lookupdata, callback) => {
   exports.deactivateUser = async (email, role) => {
     return new Promise((resolve, reject) => {
         const sql = "CALL USP_GLOBAL_DEACTIVE_USER(?, ?)";
+
         db.query(sql, [email, role], (err, result) => {
             if (err) {
-                reject(err);
-            } else {
-                resolve(result);
+                return reject(err);
             }
+
+            // Extracting the message from stored procedure response
+            const responseMessage = result?.[0]?.[0]?.message || "Unknown response";
+            console.log(responseMessage,"responseMessage");
+            
+            // Define a response object with dynamic success/error handling
+            const response = {
+                message: responseMessage,
+                success: responseMessage === "User successfully deleted",
+                error: responseMessage !== "User successfully deleted"
+            };
+
+            resolve(response);
         });
     });
 };
-
