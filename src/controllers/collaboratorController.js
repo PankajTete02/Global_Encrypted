@@ -1,6 +1,7 @@
 const CollaboratorModel = require('../models/collaboratorModel');
 const shortenURL = require("../middleware/tiny_url");
-const {generateQRCodeWithImage, generateBadge} = require("../middleware/helper");
+const {generateQRCodeWithImage, generateBadge, ensureDirectoryExists} = require("../middleware/helper");
+const path = require("path");
 
 // API to get all collaborators
 exports.getAllCollaborator = async (req, res) => {
@@ -37,27 +38,26 @@ exports.getCollaboratorById = async (req, res) => {
 // API to create a collaborator
 exports.createCollaborator = async (req, res) => {
   try {
-    const { email } = req.body;
+      const { email } = req.body;
+      if (await CollaboratorModel.checkEmailExists(email, null)) {
+          return res.status(400).json({ message: "Email already exists." });
+      }
 
-    // Check if email exists
-    const exists = await CollaboratorModel.checkEmailExists(email, null);
-    if (exists) return res.status(400).json({ message: "Email already exists." });
+      const result = await CollaboratorModel.create(req.body);
+      // result.qr_code_url = await shortenURL(result.qr_code_url);
+      const qr_code_path = path.join(__dirname, "../uploads/collaborator/qr/", `${result.qr_unique_code}.png`);
+      const base_image_path = path.join(__dirname, "../uploads/collaborator/base/collaborator_card.png");
+      const destination_path_img = path.join(__dirname, "../uploads/collaborator/batch/image");
+      const destination_path_pdf = path.join(__dirname, "../uploads/collaborator/batch/pdf");
+      
+      [path.join(__dirname, "../uploads/collaborator/qr"), path.join(__dirname, "../uploads/collaborator/base"), destination_path_img, destination_path_pdf].forEach(ensureDirectoryExists);
 
-    const result = await CollaboratorModel.create(req.body);
-
-    // Generate tiny URL
-    const tiny_url = await shortenURL(result.qr_code_url);
-
-    //generate qr
-    await generateQRCodeWithImage('',tiny_url);
-
-    //generate batch image
-    //generate batch pdf
-    //await generateBadge()
-
-    res.status(201).json({ message: 'Collaborator created', tiny_url });
+      await generateQRCodeWithImage(qr_code_path, result.qr_code_url);
+      await generateBadge({ baseImagePath: base_image_path, response: result, qrCodePath: qr_code_path, destFolderImg: destination_path_img, destFolderPdf: destination_path_pdf });
+      
+      res.status(201).json({ message: 'Collaborator created', tiny_url: result.qr_code_url });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err.message });
   }
 };
 

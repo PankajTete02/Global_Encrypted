@@ -40,7 +40,7 @@ const CollaboratorModel = {
       data.peacekeeper_id,
       data.peacekeeper_ref_code
     ]);
-    return results;
+    return results[0][0];
   },
 
   // Update a Collaborator
@@ -65,13 +65,22 @@ const CollaboratorModel = {
     await db.promise().query(sql, [id]);
   },
 
-  // Check if email exists using the stored procedure
   checkEmailExists: async (email, id) => {
-    const sql = "CALL CheckEmailExistsCollaborator(?, ?)";
-    const [results] = await db.promise().query(sql, [email, id]);
-    
-    // Ensure result exists
-    return results[0]?.[0]?.existsFlag === 1;
+    try {
+        // Initialize the session variable
+        await db.promise().execute("SET @emailExists = NULL");
+
+        // Call the stored procedure
+        await db.promise().execute("CALL CheckEmailExistsCollaborator(?, ?, @emailExists)", [email, id]);
+
+        // Retrieve the result
+        const [results] = await db.promise().execute("SELECT @emailExists AS existsFlag");
+
+        return results[0]?.existsFlag === 1;
+    } catch (error) {
+        console.error("Error checking email existence:", error);
+        return false; // Default to false in case of an error
+    }
   }
 
 };

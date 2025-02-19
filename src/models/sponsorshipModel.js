@@ -44,11 +44,25 @@ const SponsorshipModel = {
     await db.promise().query(sql, [id]);
   },
 
+  // Check if email exists using the stored procedure
   checkEmailExists: async (email, id) => {
-    const sql = "CALL CheckEmailExistsSponsorship(?, ?)";
-    const [results] = await db.promise().query(sql, [email, id]);
-    return results[0]?.[0]?.existsFlag === 1;
+    try {
+        // Initialize the session variable
+        await db.promise().execute("SET @emailExists = NULL");
+
+        // Call the stored procedure
+        await db.promise().execute("CALL CheckEmailExistsSponsorship(?, ?, @emailExists)", [email, id]);
+
+        // Retrieve the result
+        const [results] = await db.promise().execute("SELECT @emailExists AS existsFlag");
+
+        return results[0]?.existsFlag === 1;
+    } catch (error) {
+        console.error("Error checking email existence:", error);
+        return false; // Default to false in case of an error
+    }
   }
+
 };
 
 module.exports = SponsorshipModel;
