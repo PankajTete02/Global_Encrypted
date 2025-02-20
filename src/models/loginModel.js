@@ -49,6 +49,29 @@ exports.generatePassword = async (email, password) => {
     }
 };
 
+exports.insertPassword = async (email, password) => {
+    try {
+ 
+        const rows = await db.promise().query('CALL USP_AUTH_INSERT_PWD(?, ?)', [email, password]);
+		// console.log(rows,"rows");
+		
+        return { success: true, message: rows[0].message || 'Password created successfully.' };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+};
+exports.forgetPassword = async (email, pwd) => {
+    try {
+ 
+        const rows = await db.promise().query('CALL USP_AUTH_FORGET_PWD(?, ?,?,?)', [email, pwd]);
+		// console.log(rows,"rows");
+		
+        return { success: true, message: rows[0].message || 'Password sent successfully.' };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+};
+
 exports.getLookupData   = async (lookupdata, callback) => {
     const query = "CALL USP_GLOBAL_FETCH_LOOKUP_MASTER(?, ?)";
     const params = [

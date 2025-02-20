@@ -33,6 +33,51 @@ async function otpSend(email, otp) {
 	}
 }
 
+async function pwdSend(email, pwd) {
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: "Peacekeeper@global-jlp-summit.com", // Your Gmail
+            pass: "tusi xeoi hxoz fwwb", // Replace with App Password
+        },
+    });
+
+    const mailOptions = {
+        from: "Peacekeeper@global-jlp-summit.com",
+        to: email,
+        subject: "Your New Password",
+        text: `Your new password is: ${pwd}`,
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Email sent: " + info.response);
+        return info.response;
+    } catch (error) {
+        console.error("Error sending email: ", error);
+        throw error;
+    }
+}
+
+function generateRandomPassword() {
+    const length = Math.floor(Math.random() * 2) + 7; // Randomly choose between 7 and 8 characters
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const specialChars = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + specialChars;
+
+    let password = "";
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += specialChars[Math.floor(Math.random() * specialChars.length)];
+
+    for (let i = 2; i < length; i++) {
+        password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    return password.split("").sort(() => 0.5 - Math.random()).join(""); // Shuffle password
+}
+
 
 exports.sendOtp = async (req, res) => {
 	try {
@@ -54,7 +99,7 @@ exports.sendOtp = async (req, res) => {
 		console.log(result.otp,"otp");
 
 		// Check if registeration_type = 0 and that email already registerd as peacekeeper 
-		if(result.result[0][0].status ==3){
+		if(result.result[0][0].status === 3){
 			return res.status(400).json({
 				message : "Email was already registered,you can login",
 				status: 400,
@@ -200,6 +245,95 @@ exports.updatePassword = async (req, res) => {
     } catch (error) {
         console.error("Error in updatePassword:", error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+// genrate password 1st time
+exports.insertPassword = async (req, res) => {
+    try {
+		// const decrypt_details= await decrypt(req.body);
+		// console.log(decrypt_details,"decrypt_details");
+		
+        // const parsedData = JSON.parse(decrypt_details);
+		const parsedData = req.body;
+		console.log(parsedData,"parsedData");
+		const {email, password, confirmPassword} = parsedData;
+        if (!email || !password || !confirmPassword) {
+            return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
+        }
+		const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ success: false, error:true ,message: 'Password must contain at least one uppercase letter and one special character.' });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({ success: false, error:true,message: 'Password and Confirm Password do not match.' });
+        }
+		
+		const encryptedPassword =await encrypt(password);
+		
+        const result = await otpModel.insertPassword(email, encryptedPassword);
+		// console.log(result,"result");
+	
+		if(result.success == 1){
+		return res.status(200).json({
+			message: result.message, 
+			status: 200,
+			success:true,
+			error:false
+		});
+	}else{
+		return res.status(400).json({
+			message: result, 
+			status: 400,
+			success:false,
+			error:true
+		});
+	}
+
+    } catch (error) {
+        console.error("Error in updatePassword:", error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+exports.forgetPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, error: true, message: "Email is required." });
+        }
+
+        // Generate a random password
+        const newPassword = generateRandomPassword();
+        console.log("Generated Password:", newPassword);
+
+        // Send password via email
+        await pwdSend(email, newPassword);
+
+        // Encrypt the password
+        const encryptedPassword = await encrypt(newPassword);
+
+        // Store the encrypted password
+        const result = await otpModel.forgetPassword(email, encryptedPassword);
+
+        if (result.success === 1) {
+            return res.status(200).json({
+                message: result.message,
+                status: 200,
+                success: true,
+                error: false,
+            });
+        } else {
+            return res.status(400).json({
+                message: result,
+                status: 400,
+                success: false,
+                error: true,
+            });
+        }
+    } catch (error) {
+        console.error("Error in forgetPassword:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
