@@ -53,44 +53,35 @@ exports.sendOtp = async (req, res) => {
 		console.log(result[0],"check");
 		console.log(result.otp,"otp");
 
+		// Check if registeration_type = 0 and that email already registerd as peacekeeper 
 		if(result.result[0][0].status ==3){
 			return res.status(400).json({
 				message : "Email was already registered,you can login",
 				status: 400,
 				success: false,
-				error: true
+				error: true,
+				status_type:3
 			});
 		}
-		if(result.result[0][0].status === 1){
-			console.log("1");
-			console.log(result.otp,"result.otp");
-			const mail=await otpSend(email, result.otp);
-			console.log(mail,"mail");
-			return res.status(200).json(
-				{
-				 message:result.result[0][0].message, 
-				 status: 200,
-				 success:true,
-				 error:false
-				}
-				);
-		}
-		else if(result.result[0][0].status === 4){
-			console.log("4");
-			res.status(200).json(
-				{ message: result.result[0][0].message, 
+		// it Checks if registeration_type = 1 on login time if the user enter the email id which was not in our data BAse meas it was not register user then the message from the database was 
+		// User does not exist 
+		else if(result.result[0][0].status === -1){
+			res.status(400).json(
+				{ message: result.result[0][0].message, //User does not exist
 					status: 400,
 					success:false,
-					error:true
+					error:true,
+					status_type:-1
 				});
 		}
+		// else it was give the responce OTP sent successfully 
 		else
 		{ 
 			console.log("5");
 			console.log(result.otp,"result.otp1");
 			const mail=await otpSend(email, result.otp);
 			res.status(200).json(
-				{ message: result.result[0][0].message, 
+				{ message: result.result[0][0].message, //OTP sent successfully
 					status: 200,
 					success:true,
 					error:false
