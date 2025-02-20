@@ -12,8 +12,6 @@ const PDFDocument = require("pdfkit");
 require('dotenv').config();
 const { log, error } = require('console');
 const uploadPath = path.join(__dirname, '../uploads/profile_pics');
-const {VerifyToken,encrypt,decrypt}=require("../middleware/auth");
-const {shortenURL} =require("../middleware/tiny_url");
 
 //main
 //const { PDFDocument } = require('pdf-lib');
@@ -72,11 +70,11 @@ const createPeacekeeper = (req, res) => {
         errorMessage: err.message
       });
     }
-
+ 
     const { full_name, country, email_id, dob, mobile_number, country_code, Check_email, url, is_active } = req.body;
-
+ 
     const errors = [];
-
+ 
     // Required fields validation
     const requiredFields = ["full_name", "email_id", "mobile_number", "dob"];
     requiredFields.forEach(field => {
@@ -84,18 +82,19 @@ const createPeacekeeper = (req, res) => {
             errors.push(`${field} is required`);
         }
     });
-    
+   
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email_id && !emailRegex.test(email_id)) {
         errors.push("Invalid email format");
     }
-    
-    // Validate mobile number (only digits)    
-	if (mobile_number && !/^\+\d{1,3} \d+$/.test(mobile_number.trim())) {
+   
+    // Validate mobile number (only digits)
+    if (mobile_number.trim() && !/^\+\d{1,6} \d+$/.test(mobile_number.trim())) {
       errors.push("Mobile number should start with a country code (e.g., +91), contain a space, followed by digits without spaces or special characters");
   }
-    
+ 
+   
     // Validate DOB (YYYY-MM-DD format and a past date)
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (dob) {
@@ -109,7 +108,7 @@ const createPeacekeeper = (req, res) => {
             }
         }
     }
-
+ 
     if (errors.length > 0) {
       return res.status(400).json({
           success: false,
@@ -117,12 +116,12 @@ const createPeacekeeper = (req, res) => {
           message: errors[0] // Returning only the first validation error
       });
   }
-
+ 
     // If file upload is successful, the file information will be available in `req.file`
     const file_name = req.file ? req.file.filename : null;  // File name (e.g., "profilepic-12345.jpg")
     const file_path = req.file ? req.file.filename : null;  // Only store the file name and extension
     const file_type = req.file ? req.file.mimetype : null;   // File type (e.g., "image/jpeg")
-
+ 
     const peacekeeperData = {
       full_name,
       country,
@@ -137,7 +136,7 @@ const createPeacekeeper = (req, res) => {
       url,
       is_active
     };
-
+ 
     // Call the model function to insert the peacekeeper data
     peacekeeperModel.insertPeacekeeper(peacekeeperData, async (err, response) => {
       if (err) {
@@ -148,7 +147,7 @@ const createPeacekeeper = (req, res) => {
           errorMessage: err.message
         });
       }
-
+ 
       // Handle response from the stored procedure
       if (response[0].response === "fail") {
         return res.status(400).json({
@@ -163,8 +162,394 @@ const createPeacekeeper = (req, res) => {
           message: "Mobile number already exists."
         });
       } else if (response[0].response === "success") {
+ 
+ 
+        console.log("response", response[0]);
+        console.log(response[0], "response[0]");
+        const name = `${response[0].full_name}`;
+        const imageName = `${response[0].coupon_code}.png`;
+        const imagePath = path.join(__dirname, '../uploads/delegate_qr', imageName);
+ 
+        // const qrCodeBuffer = await qrcode.toBuffer(response[0].qr_code);
+        // console.log(qrCodeBuffer, "qrCodeBuffer")
+        // fs.writeFileSync(imagePath, qrCodeBuffer);
+ 
+ 
+ 
+        async function generateQRCodeWithImage(imagePath, qr_url) {
+          try {
+            // Define paths
+            const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
+ 
+            const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
+              errorCorrectionLevel: 'H', // High error correction for logo overlay
+              scale: 10,// Scale for higher resolution QR code
+              margin: 1
+            });
+ 
+            // Get QR code dimensions
+            const qrDimensions = await sharp(qrCodeBuffer).metadata();
+            const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
+ 
+            // Apply circular mask to the logo and enhance quality
+            const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
+ 
+            // Process the QR code with the logo overlay
+            await sharp(qrCodeBuffer)
+              .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
+              .composite([{
+                input: logoBuffer,
+                gravity: 'center', // Center the logo in the middle
+                blend: 'over', // Overlay the logo onto the QR code
+              }])
+              .toFile(imagePath); // Save the final image
+ 
+            console.log("QR Code with sharp logo saved at:", imagePath);
+          } catch (error) {
+            console.error("Error generating QR code:", error);
+          }
+        }
+ 
+        // Function to apply circular mask to the logo and sharpen it
+        async function applyCircleMaskToLogo(logoPath, logoSize) {
+          const logoImage = await sharp(logoPath)
+            .resize(logoSize, logoSize) // Resize logo to desired size
+            .toBuffer();
+ 
+          // Create a circular mask for the logo
+          const circleMask = Buffer.from(
+            `<svg width="${logoSize}" height="${logoSize}">
+                  <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
+              </svg>`
+          );
+ 
+          // Apply circular mask on logo and sharpen the image
+          return sharp(logoImage)
+            .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
+            .sharpen(2) // Apply sharpening for better clarity
+            .toBuffer();
+        }
+ 
+        // Example Usage
+        await generateQRCodeWithImage(imagePath, response[0].qr_code);
+ 
+ 
+        const protocol = "https";
+        const personData = {
+          username: response[0].full_name || "N/A",
+          country: response[0].country_code || "N/A",
+          email: response[0].email_id || "N/A",
+          idNo: response[0].ID_NO || "N/A",
+          file_name: response[0].file_name || null,
+          picUrl: `${protocol}://${req.get("host")}/uploads/profile_pics/${response[0].file_name}`,
+          qrCodeUrl: `${protocol}://${req.get("host")}/uploads/delegates/${response[0].coupon_code}.png`,
+        };
+        console.log(personData.file_name, "file_name");
+        const photo = response[0].file_name ? `../uploads/profile_pics/${response[0].file_name}` : '../uploads/profile_pics/null.png';
+        const baseImagePath = path.join(__dirname, "../uploads/delegate_qr/Final Badge.png");
+        const userPhotoPath = path.join(__dirname, photo);
+        console.log(baseImagePath, "baseImagePath");
+        // const userPhotoPath = `${protocol}://${req.get("host")}/uploads/profile_pics/ac.png`;
+        console.log(userPhotoPath, "userPhotoPath");
+        const qrCodePath = path.join(__dirname, `../uploads/delegate_qr/${response[0].coupon_code}.png`);
+        console.log(response[0].coupon_code, "zxzxcxxcxc");
+        const destFolder = path.join(__dirname, "../uploads/batch_photo");
+        console.log("asasasa");
+        // Ensure the destination folder exists
+        if (!fs.existsSync(destFolder)) {
+          fs.mkdirSync(destFolder, { recursive: true });
+        }
+ 
+        // Load images
+        const baseImage = await loadImage(baseImagePath);
+        const userPhoto = await loadImage(userPhotoPath);
+        const qrCode = await loadImage(qrCodePath);
+ 
+        // Create canvas
+        if (req.body.Check_email == 1) {
+          const canvas = createCanvas(baseImage.width, baseImage.height);
+          const ctx = canvas.getContext("2d");
+ 
+          // Draw base image
+          ctx.drawImage(baseImage, 0, 0);
+ 
+          // Draw circular user photo with border
+          const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, 2 * Math.PI);
+          ctx.clip();
+          ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
+          ctx.restore();
+ 
+          ctx.beginPath();
+          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
+          ctx.strokeStyle = "green";
+          ctx.lineWidth = borderWidth;
+          ctx.stroke();
+ 
+          // Add user details
+          ctx.font = "bold 65px Arial";
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.username, 200, 250);
+ 
+          ctx.font = "bold 55px Arial";
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("Country:", 200, 350);
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.country, 440, 350);
+ 
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("Mobile:", 200, 420);
+          ctx.fillStyle = "black";
+          ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
+ 
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("E-mail:", 200, 500);
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.email, 400, 500);
+ 
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("ID No:", 200, 580);
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.idNo, 400, 580);
+ 
+ 
+          // ctx.fillStyle = "6px Arial #17598e";
+          // ctx.fillText(response[0].qr_code, 100, 2440);
+          // Add QR code
+          const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
+          ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+ 
+          // Save the output
+          const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
+          const out = fs.createWriteStream(outputFilePath);
+          const stream = canvas.createPNGStream();
+          stream.pipe(out);
+          out.on("finish", async () => {
+            console.log(`Badge saved as PNG at: ${outputFilePath}`);
+            const destFolderPdf = path.join(__dirname, "../uploads/badge_pdf");
+            // Create a PDF document and save it
+            const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
+            const doc = new PDFDocument();
+ 
+            doc.pipe(fs.createWriteStream(pdfFilePath));
+            const margin = 0;
+            doc.image(outputFilePath, {
+              fit: [650 - margin * 2, 650 - margin * 2], // Adjust fit dimensions based on margins
+              align: "center",
+              valign: "center",
+              x: margin, // X-coordinate to include the left margin
+              y: margin, // Y-coordinate to include the top margin
+            });
+            doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
+              link: response[0].qr_code, // This makes the link clickable
+              underline: true // Optional: underline the link for emphasis
+            });
+ 
+            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
+              link: response[0].qr_code, // This makes the link clickable
+              underline: true, // Optional: underline the link for emphasis
+            });
+ 
+            doc.end();
+ 
+            console.log(`Badge saved as PDF at: ${pdfFilePath}`);
+          });
+ 
+        }
+        else {
+          const canvas = createCanvas(baseImage.width, baseImage.height);
+          const ctx = canvas.getContext("2d");
+ 
+          // Draw base image
+          ctx.drawImage(baseImage, 0, 0);
+ 
+          // Draw circular user photo with border
+          const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, 2 * Math.PI);
+          ctx.clip();
+          ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
+          ctx.restore();
+ 
+          ctx.beginPath();
+          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
+          ctx.strokeStyle = "green";
+          ctx.lineWidth = borderWidth;
+          ctx.stroke();
+ 
+          // Add user details
+          ctx.font = "bold 65px Arial";
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.username, 200, 250);
+ 
+          ctx.font = "bold 55px Arial";
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("Country:", 200, 350);
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.country, 440, 350);
+ 
+          // ctx.fillStyle = "#17598e";
+          // ctx.fillText("Mobile:", 200, 420);
+          // ctx.fillStyle = "black";
+          // ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
+ 
+          // ctx.fillStyle = "#17598e";
+          // ctx.fillText("E-mail:", 200, 500);
+          // ctx.fillStyle = "black";
+          // ctx.fillText(personData.email, 400, 500);
+ 
+          ctx.fillStyle = "#17598e";
+          ctx.fillText("ID No:", 200, 420);
+          ctx.fillStyle = "black";
+          ctx.fillText(personData.idNo, 400, 420);
+ 
+ 
+          // ctx.fillStyle = "6px Arial #17598e";
+          // ctx.fillText(response[0].qr_code, 100, 2440);
+          // Add QR code
+          const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
+          ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+ 
+          // Save the output
+          const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
+          const out = fs.createWriteStream(outputFilePath);
+          const stream = canvas.createPNGStream();
+          stream.pipe(out);
+          out.on("finish", async () => {
+            console.log(`Badge saved as PNG at: ${outputFilePath}`);
+            const destFolderPdf = path.join(__dirname, "../uploads/badge_pdf");
+            // Create a PDF document and save it
+            const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
+            const doc = new PDFDocument();
+ 
+            doc.pipe(fs.createWriteStream(pdfFilePath));
+            const margin = 0;
+            doc.image(outputFilePath, {
+              fit: [650 - margin * 2, 650 - margin * 2], // Adjust fit dimensions based on margins
+              align: "center",
+              valign: "center",
+              x: margin, // X-coordinate to include the left margin
+              y: margin, // Y-coordinate to include the top margin
+            });
+            doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
+              link: response[0].qr_code, // This makes the link clickable
+              underline: true // Optional: underline the link for emphasis
+            });
+ 
+            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(response[0].qr_code, 120, 638, {
+              link: response[0].qr_code, // This makes the link clickable
+              underline: true, // Optional: underline the link for emphasis
+            });
+ 
+            doc.end();
+ 
+            console.log(`Badge saved as PDF at: ${pdfFilePath}`);
+          });
+ 
+        }
+        console.log("batch photo successfully saved");
+        const destFolder1 = path.join(__dirname, "../uploads/badge_pdf");
+        const destFolder2 = path.join(__dirname, "../uploads/batch_photo");
+ 
+        const couponCode = response[0]?.coupon_code;
+        if (!couponCode) {
+          console.error("Error: coupon_code is undefined in response[0].");
+ 
+        }
+        console.log(couponCode, "//////");
+        const imageName1 = `${couponCode}.png`;
+        console.log(destFolder2, "destFolder2");
+        const imagePath_pdf = path.join(destFolder2, imageName1);
+        console.log(imagePath_pdf, "imagePath_pdf");
+ 
+ 
+        const pdfPath = path.join(destFolder1, `${couponCode}.pdf`);
+        console.log(pdfPath, "pdfPath");
+        console.log(`${couponCode} processing complete.`);
+ 
+        const transporter = nodemailer.createTransport({
+          service: 'gmail', // or use any other email provider
+          auth: {
+            user: 'Peacekeeper@global-jlp-summit.com', // your email address
+            pass: 'tusi xeoi hxoz fwwb'   // your email password
+          }
+        });
+        const mailOptions = {
+          from: 'Peacekeeper@global-jlp-summit.com',
+          to: `${response[0].email_id}`,  // Adjust recipient
+          // to: "udayshimpi2000@gmail.com",
+          subject: 'Peacekeeper Badge generated successfully',
+          html: `<img src="cid:qrCodeImage" alt="QR Code" style="width: 50%; height: 50%;border: 1px solid green;" />`,
+          attachments: [
+            {
+              filename: `${response[0].coupon_code}.png`, // Assuming coupon_code exists in response[0]
+              path: path.join(__dirname, '../uploads/batch_photo', `${response[0].coupon_code}.png`),
+              cid: 'qrCodeImage' // Same Content-ID as used in the HTML
+            },
+            {
+              filename: `${response[0].coupon_code}.pdf`, // Assuming coupon_code exists in response[0]
+              path: path.join(__dirname, '../uploads/badge_pdf', `${response[0].coupon_code}.pdf`),
+              cid: 'qrCodeImage_pdf' // Same Content-ID as used in the HTML
+            }
+          ]
+ 
+        };
+ 
+ 
+        // Send the email
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Error sending email:', error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
+ 
+        return res.status(201).json({
+          success: true,
+          error: false,
+          message: "Peacekeeper profile created successfully.",
+          message1: response[0].response,
+          peacekeeper_id: response[0].peacekeeper_id,  // Return the peacekeeper ID
+          QR_code: `${protocol}://${req.get("host")}/uploads/delegates/${response[0].coupon_code}.png`,
+          batch: `${protocol}://${req.get("host")}/uploads/batch/photo/${response[0].coupon_code}.png`,
+          Data: peacekeeperData,
+        });
+ 
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: true,
+          message: "Unknown error."
+        });
+      }
+    });
+  })
+}
 
-
+const update_Peacekeeper = (req, res) => {
+  console.log(req.body.peace_id.length, "peace_id.length")
+  if (req.body.peace_id.length == "0") {
+    return res.status(500).json({
+      success: false,
+      error: true,
+      message: "All field are required"
+    });
+  }
+  else {
+    peacekeeperModel.updatePeacekeeper(req, async (err, response) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          error: true,
+          message: "Server error",
+          errorMessage: err.message
+        });
+      }
+      else {
         console.log("response", response[0]);
         console.log(response[0], "response[0]");
         const name = `${response[0].full_name}`;
@@ -174,9 +559,7 @@ const createPeacekeeper = (req, res) => {
         // const qrCodeBuffer = await qrcode.toBuffer(response[0].qr_code);
         // console.log(qrCodeBuffer, "qrCodeBuffer")
         // fs.writeFileSync(imagePath, qrCodeBuffer);
-
-
-
+       
         async function generateQRCodeWithImage(imagePath, qr_url) {
           try {
             // Define paths
@@ -233,8 +616,9 @@ const createPeacekeeper = (req, res) => {
 
         // Example Usage
         await generateQRCodeWithImage(imagePath, response[0].qr_code);
-
-
+      
+       
+       
         const protocol = "https";
         const personData = {
           username: response[0].full_name || "N/A",
@@ -248,13 +632,15 @@ const createPeacekeeper = (req, res) => {
         console.log(personData.file_name, "file_name");
         const photo = response[0].file_name ? `../uploads/profile_pics/${response[0].file_name}` : '../uploads/profile_pics/null.png';
         const baseImagePath = path.join(__dirname, "../uploads/delegate_qr/Final Badge.png");
+        const photo1 = `../uploads/profile_pics/null.png`;
         const userPhotoPath = path.join(__dirname, photo);
+
         console.log(baseImagePath, "baseImagePath");
         // const userPhotoPath = `${protocol}://${req.get("host")}/uploads/profile_pics/ac.png`;
         console.log(userPhotoPath, "userPhotoPath");
         const qrCodePath = path.join(__dirname, `../uploads/delegate_qr/${response[0].coupon_code}.png`);
-        console.log(response[0].coupon_code, "zxzxcxxcxc");
         const destFolder = path.join(__dirname, "../uploads/batch_photo");
+
         console.log("asasasa");
         // Ensure the destination folder exists
         if (!fs.existsSync(destFolder)) {
@@ -263,11 +649,15 @@ const createPeacekeeper = (req, res) => {
 
         // Load images
         const baseImage = await loadImage(baseImagePath);
-        const userPhoto = await loadImage(userPhotoPath);
+        try {
+          userPhoto = await loadImage(userPhotoPath);
+        } catch (error) {
+          console.error("Unable to read userPhotoPath. Using default photo path:", error);
+          userPhoto = await loadImage(path.join(__dirname, "../uploads/profile_pics/null.png"));
+        }
         const qrCode = await loadImage(qrCodePath);
-
-        // Create canvas
-        if (req.body.Check_email == 1) {
+        console.log("mail", response[0].check_email);
+        if (response[0].check_email == 1) {
           const canvas = createCanvas(baseImage.width, baseImage.height);
           const ctx = canvas.getContext("2d");
 
@@ -451,387 +841,6 @@ const createPeacekeeper = (req, res) => {
           });
 
         }
-        console.log("batch photo successfully saved");
-        const destFolder1 = path.join(__dirname, "../uploads/badge_pdf");
-        const destFolder2 = path.join(__dirname, "../uploads/batch_photo");
-
-        const couponCode = response[0]?.coupon_code;
-        if (!couponCode) {
-          console.error("Error: coupon_code is undefined in response[0].");
-
-        }
-        console.log(couponCode, "//////");
-        const imageName1 = `${couponCode}.png`;
-        console.log(destFolder2, "destFolder2");
-        const imagePath_pdf = path.join(destFolder2, imageName1);
-        console.log(imagePath_pdf, "imagePath_pdf");
-
-
-        const pdfPath = path.join(destFolder1, `${couponCode}.pdf`);
-        console.log(pdfPath, "pdfPath");
-        console.log(`${couponCode} processing complete.`);
-
-        const transporter = nodemailer.createTransport({
-          service: 'gmail', // or use any other email provider
-          auth: {
-            user: 'Peacekeeper@global-jlp-summit.com', // your email address
-            pass: 'tusi xeoi hxoz fwwb'   // your email password
-          }
-        });
-        const mailOptions = {
-          from: 'Peacekeeper@global-jlp-summit.com',
-          to: `${response[0].email_id}`,  // Adjust recipient
-          // to: "udayshimpi2000@gmail.com",
-          subject: 'Peacekeeper Badge generated successfully',
-          html: `<img src="cid:qrCodeImage" alt="QR Code" style="width: 50%; height: 50%;border: 1px solid green;" />`,
-          attachments: [
-            {
-              filename: `${response[0].coupon_code}.png`, // Assuming coupon_code exists in response[0]
-              path: path.join(__dirname, '../uploads/batch_photo', `${response[0].coupon_code}.png`),
-              cid: 'qrCodeImage' // Same Content-ID as used in the HTML
-            },
-            {
-              filename: `${response[0].coupon_code}.pdf`, // Assuming coupon_code exists in response[0]
-              path: path.join(__dirname, '../uploads/badge_pdf', `${response[0].coupon_code}.pdf`),
-              cid: 'qrCodeImage_pdf' // Same Content-ID as used in the HTML
-            }
-          ]
-
-        };
-
-
-        // Send the email
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            console.error('Error sending email:', error);
-          } else {
-            console.log('Email sent: ' + info.response);
-          }
-        });
-
-        return res.status(201).json({
-          success: true,
-          error: false,
-          message: "Peacekeeper profile created successfully.",
-          message1: response[0].response,
-          peacekeeper_id: response[0].peacekeeper_id,  // Return the peacekeeper ID
-          QR_code: `${protocol}://${req.get("host")}/uploads/delegates/${response[0].coupon_code}.png`,
-          batch: `${protocol}://${req.get("host")}/uploads/batch/photo/${response[0].coupon_code}.png`,
-          Data: peacekeeperData,
-        });
-
-      } else {
-        return res.status(400).json({
-          success: false,
-          error: true,
-          message: "Unknown error."
-        });
-      }
-    });
-  })
-}
-
-const update_Peacekeeper = (req, res) => {
-  console.log(req.body.peace_id.length, "peace_id.length")
-  if (req.body.peace_id.length == "0") {
-    return res.status(500).json({
-      success: false,
-      error: true,
-      message: "All field are required"
-    });
-  }
-  else {
-    peacekeeperModel.updatePeacekeeper(req, async (err, response) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          error: true,
-          message: "Server error",
-          errorMessage: err.message
-        });
-      }
-      else {
-        console.log("response", response[0]);
-        console.log(response[0], "response[0]");
-        const name = `${response[0].full_name}`;
-        const imageName = `${response[0].coupon_code}.png`;
-        const imagePath = path.join(__dirname, '../uploads/delegate_qr', imageName);
-
-        peacekeeperModel.tinyurl(req,response[0].qr_code,async(err,response)=>{
-            console.log(response,"check_response");
-            console.log(err,"error");
-        });
-        async function generateQRCodeWithImage(imagePath, qr_url) {
-          try {
-            // Define paths
-            const logoPath = path.join(__dirname, "../uploads/delegate_qr", "Logo.png"); // Logo path
-
-            const qrCodeBuffer = await qrcode.toBuffer(qr_url, {
-              errorCorrectionLevel: 'H', // High error correction for logo overlay
-              scale: 10,// Scale for higher resolution QR code
-              margin: 1
-            });
-
-            // Get QR code dimensions
-            const qrDimensions = await sharp(qrCodeBuffer).metadata();
-            const logoSize = Math.floor(qrDimensions.width / 4); // Resize logo to 1/4 of the QR code size
-
-            // Apply circular mask to the logo and enhance quality
-            const logoBuffer = await applyCircleMaskToLogo(logoPath, logoSize);
-
-            // Process the QR code with the logo overlay
-            await sharp(qrCodeBuffer)
-              .resize(qrDimensions.width, qrDimensions.height) // Ensure QR code is correct size
-              .composite([{
-                input: logoBuffer,
-                gravity: 'center', // Center the logo in the middle
-                blend: 'over', // Overlay the logo onto the QR code
-              }])
-              .toFile(imagePath); // Save the final image
-
-            console.log("QR Code with sharp logo saved at:", imagePath);
-          } catch (error) {
-            console.error("Error generating QR code:", error);
-          }
-        }
-
-        // Function to apply circular mask to the logo and sharpen it
-        async function applyCircleMaskToLogo(logoPath, logoSize) {
-          const logoImage = await sharp(logoPath)
-            .resize(logoSize, logoSize) // Resize logo to desired size
-            .toBuffer();
-
-          // Create a circular mask for the logo
-          const circleMask = Buffer.from(
-            `<svg width="${logoSize}" height="${logoSize}">
-                  <circle cx="${logoSize / 2}" cy="${logoSize / 2}" r="${logoSize / 2}" fill="white" />
-              </svg>`
-          );
-
-          // Apply circular mask on logo and sharpen the image
-          return sharp(logoImage)
-            .composite([{ input: circleMask, blend: 'dest-in' }]) // Apply mask to the logo
-            .sharpen(2) // Apply sharpening for better clarity
-            .toBuffer();
-        }
-
-        // Example Usage
-        await generateQRCodeWithImage(imagePath, await shortenURL( response[0].qr_code));
-      
-       
-       
-        const protocol = "https";
-        const personData = {
-          username: response[0].full_name || "N/A",
-          country: response[0].country_code || "N/A",
-          email: response[0].email_id || "N/A",
-          idNo: response[0].ID_NO || "N/A",
-          file_name: response[0].file_name || null,
-          picUrl: `${protocol}://${req.get("host")}/uploads/profile_pics/${response[0].file_name}`,
-          qrCodeUrl: `${protocol}://${req.get("host")}/uploads/delegates/${response[0].coupon_code}.png`,
-        };
-        console.log(personData.file_name, "file_name");
-        const photo = response[0].file_name ? `../uploads/profile_pics/${response[0].file_name}` : '../uploads/profile_pics/null.png';
-        const baseImagePath = path.join(__dirname, "../uploads/delegate_qr/Final Badge.png");
-        const photo1 = `../uploads/profile_pics/null.png`;
-        const userPhotoPath = path.join(__dirname, photo);
-
-        console.log(baseImagePath, "baseImagePath");
-        // const userPhotoPath = `${protocol}://${req.get("host")}/uploads/profile_pics/ac.png`;
-        console.log(userPhotoPath, "userPhotoPath");
-        const qrCodePath = path.join(__dirname, `../uploads/delegate_qr/${response[0].coupon_code}.png`);
-        const destFolder = path.join(__dirname, "../uploads/batch_photo");
-
-        console.log("asasasa");
-        // Ensure the destination folder exists
-        if (!fs.existsSync(destFolder)) {
-          fs.mkdirSync(destFolder, { recursive: true });
-        }
-
-        // Load images
-        const baseImage = await loadImage(baseImagePath);
-        try {
-          userPhoto = await loadImage(userPhotoPath);
-        } catch (error) {
-          console.error("Unable to read userPhotoPath. Using default photo path:", error);
-          userPhoto = await loadImage(path.join(__dirname, "../uploads/profile_pics/null.png"));
-        }
-        const qrCode = await loadImage(qrCodePath);
-        console.log("mail", response[0].check_email);
-        if (response[0].check_email == 1) {
-          const canvas = createCanvas(baseImage.width, baseImage.height);
-          const ctx = canvas.getContext("2d");
-
-          // Draw base image
-          ctx.drawImage(baseImage, 0, 0);
-
-          // Draw circular user photo with border
-          const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, 2 * Math.PI);
-          ctx.clip();
-          ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
-          ctx.restore();
-
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
-          ctx.strokeStyle = "green";
-          ctx.lineWidth = borderWidth;
-          ctx.stroke();
-
-          // Add user details
-          ctx.font = "bold 65px Arial";
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.username, 200, 250);
-
-          ctx.font = "bold 55px Arial";
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("Country:", 200, 350);
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.country, 440, 350);
-
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("Mobile:", 200, 420);
-          ctx.fillStyle = "black";
-          ctx.fillText(response[0].mobile_number || "N/A", 400, 420);
-
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("E-mail:", 200, 500);
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.email, 400, 500);
-
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("ID No:", 200, 580);
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.idNo, 400, 580);
-
-
-          // ctx.fillStyle = "6px Arial #17598e";
-          // ctx.fillText(response[0].qr_code, 100, 2440);
-          // Add QR code
-          const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
-          ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
-
-          // Save the output
-          const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
-          const out = fs.createWriteStream(outputFilePath);
-          const stream = canvas.createPNGStream();
-          stream.pipe(out);
-          out.on("finish", async () => {
-            console.log(`Badge saved as PNG at: ${outputFilePath}`);
-            const destFolderPdf = path.join(__dirname, "../uploads/badge_pdf");
-            // Create a PDF document and save it
-            const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
-            const doc = new PDFDocument();
-
-            doc.pipe(fs.createWriteStream(pdfFilePath));
-            const margin = 0;
-            doc.image(outputFilePath, {
-              fit: [650 - margin * 2, 650 - margin * 2], // Adjust fit dimensions based on margins
-              align: "center",
-              valign: "center",
-              x: margin, // X-coordinate to include the left margin
-              y: margin, // Y-coordinate to include the top margin
-            });
-            doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
-              link: await shortenURL(response[0].qr_code), // This makes the link clickable
-              underline: true // Optional: underline the link for emphasis
-            });
-            const pdf_tiny_url=await shortenURL(response[0].qr_code);
-            console.log(pdf_tiny_url,"pdf_tiny_url");
-            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(pdf_tiny_url, 120, 638, {
-              link: await shortenURL(response[0].qr_code), // This makes the link clickable
-              underline: true, // Optional: underline the link for emphasis
-            });
-
-            doc.end();
-
-            console.log(`Badge saved as PDF at: ${pdfFilePath}`);
-          });
-
-        }
-        else {
-          const canvas = createCanvas(baseImage.width, baseImage.height);
-          const ctx = canvas.getContext("2d");
-
-          // Draw base image
-          ctx.drawImage(baseImage, 0, 0);
-
-          // Draw circular user photo with border
-          const photoX = 1450, photoY = 90, photoSize = 800, borderWidth = 4;
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, 2 * Math.PI);
-          ctx.clip();
-          ctx.drawImage(userPhoto, photoX, photoY, photoSize, photoSize);
-          ctx.restore();
-
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + borderWidth / 2, 0, 2 * Math.PI);
-          ctx.strokeStyle = "green";
-          ctx.lineWidth = borderWidth;
-          ctx.stroke();
-
-          // Add user details
-          ctx.font = "bold 65px Arial";
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.username, 200, 250);
-
-          ctx.font = "bold 55px Arial";
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("Country:", 200, 350);
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.country, 440, 350);
-
-
-          ctx.fillStyle = "#17598e";
-          ctx.fillText("ID No:", 200, 420);
-          ctx.fillStyle = "black";
-          ctx.fillText(personData.idNo, 400, 420);
-
-          // Add QR code
-          const qrCodeX = 1250, qrCodeY = 1850, qrCodeWidth = 400, qrCodeHeight = 400;
-          ctx.drawImage(qrCode, qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
-
-          // Save the output
-          const outputFilePath = path.join(destFolder, `${response[0].coupon_code}.png`);
-          const out = fs.createWriteStream(outputFilePath);
-          const stream = canvas.createPNGStream();
-          stream.pipe(out);
-          out.on("finish", async () => {
-            console.log(`Badge saved as PNG at: ${outputFilePath}`);
-            const destFolderPdf = path.join(__dirname, "../uploads/badge_pdf");
-            // Create a PDF document and save it
-            const pdfFilePath = path.join(destFolderPdf, `${response[0].coupon_code}.pdf`);
-            const doc = new PDFDocument();
-
-            doc.pipe(fs.createWriteStream(pdfFilePath));
-            const margin = 0;
-            doc.image(outputFilePath, {
-              fit: [650 - margin * 2, 650 - margin * 2], // Adjust fit dimensions based on margins
-              align: "center",
-              valign: "center",
-              x: margin, // X-coordinate to include the left margin
-              y: margin, // Y-coordinate to include the top margin
-            });
-            doc.fillColor('black').font('Helvetica-Bold').fontSize(8).text("To Register as a Delegate ,Click the below link", 240, 625, {
-              link: await shortenURL(response[0].qr_code), // This makes the link clickable
-              underline: true // Optional: underline the link for emphasis
-            }); 
-            const pdf_tiny_url=await shortenURL(response[0].qr_code);
-            console.log(pdf_tiny_url,"pdf_tiny_url");
-            doc.fillColor('blue').font('Helvetica-Bold').fontSize(10).text(pdf_tiny_url, 120, 638, {
-              link: await shortenURL(response[0].qr_code), // This makes the link clickable
-              underline: true, // Optional: underline the link for emphasis
-            });
-
-            doc.end();
-
-            console.log(`Badge saved as PDF at: ${pdfFilePath}`);
-          });
-
-        }
 
         const destFolder1 = path.join(__dirname, "../uploads/badge_pdf");
         console.log(response[0].coupon_code, "//////");
@@ -851,8 +860,10 @@ const update_Peacekeeper = (req, res) => {
         const qrCodeUrl = `${protocol}://${req.get("host")}/uploads/delegates/${imageName}`;
         const mailOptions = {
           from: 'Peacekeeper@global-jlp-summit.com',
-          to: `${response[0].email_id}`,  // Adjust recipient
+         to: `${response[0].email_id}`,  // Adjust recipient
           //to: "udayshimpi2000@gmail.com",
+	//to: "piyush.thakur@cylsys.com",
+	//to: "rahul.dubey@cylsys.com",
           subject: 'Here`s your Peacekeeper Badge again!',
           html: `<img src="cid:qrCodeImage" alt="QR Code" style="width: 50%; height: 50%;" />`,
           attachments: [
@@ -943,129 +954,50 @@ const getPeacekeeperData = async (req, res) => {
   }
 };
 
-// const getAllPeacekeeperData = async (req, res) => {
-//   try {
-//     // Verify the token
-//     const auth = await VerifyToken(req, res);
- 
-//     console.log(auth, "auth");
- 
-//     // Call the model function to fetch peacekeeper data
-//     peacekeeperModel.getAllPeacekeepers(req, res,auth, async (err, peacekeepers) => {
-//       if (err) {
-//         console.error("Error fetching peacekeeper data: ", err);
-//         return res.status(500).json({
-//           success: false,
-//           error: true,
-//           message: "Server error.",
-//           details: err
-//         });
-//       }
- 
-//       console.log(peacekeepers, "peacekeepers");
-//       console.log(peacekeepers[0]?.file_name, "file_name"); // Optional chaining for safety
-//       console.log(peacekeepers.length, "length");
- 
-//       // Loop through peacekeepers and update file_name paths
-//       for (let i = 0; i < peacekeepers.length; i++) {
-//         const imageFileNames = peacekeepers[i].file_name;
-//         const protocol = "https";
-//         const basePath = `${protocol}://${req.get("host")}/uploads`;
-//         const imagePaths = imageFileNames
-//           ? imageFileNames
-//             .split(", ")
-//             .map((fileName) => `${basePath}/${fileName.trim()}`)
-//           : [];
-//         console.log("Image Paths:", imagePaths);
-//         peacekeepers[i].file_name = imagePaths; // Update the file_name with image paths
-//         console.log(i); // Debugging the index
-//       }
-//       const encrypted_data= await encrypt(peacekeepers);
-//       // Return the data after processing the peacekeepers
-//       return res.status(200).json({
-//         success: true,
-//         error: false,
-//         data: encrypted_data,
-//         message: "Peacekeeper data fetched successfully."
-//       });
-//     });
-//   } catch (error) {
-//     // Handle errors that occur during token verification or other async tasks
-//     console.error("Error during token verification or other processes: ", error);
-//     return res.status(500).json({
-//       success: false,
-//       error: true,
-//       message: "Internal Server Error. Please try again.",
-//       details: error
-//     });
-//   }
-// };
- 
-const getAllPeacekeeperData = async (req, res) => {
-  try {
-    const auth = await VerifyToken(req, res);
-    console.log("Auth verified:", auth);
-
-    // Ensure the callback function is correctly passed
-    peacekeeperModel.getAllPeacekeepers(req, auth, (err, peacekeepers) => {
-      if (err) {
-        console.error("Error fetching peacekeeper data:", err);
-        return res.status(500).json({
-          success: false,
-          error: true,
-          message: "Server error.",
-          details: err
-        });
-      }
-
-      // console.log("Peacekeepers retrieved:", peacekeepers.Data ,  peacekeepers.totalCount);
-     let finalData =peacekeepers.Data
-     
-
-      for (let i = 0; i < finalData.length; i++) {
-        const imageFileNames = finalData[i].file_name;
-        const protocol = "https";
-        const basePath = `${protocol}://${req.get("host")}/uploads`;
-        const imagePaths = imageFileNames
-          ? imageFileNames.split(", ").map((fileName) => `${basePath}/${fileName.trim()}`)
-          : [];
-
-          finalData[i].file_name = imagePaths;
-        
-      }
-      return res.status(200).json({
-        success: true,
-        error: false,
-        peacekeepers,
-        message: "Peacekeeper data fetched successfully."
+const getAllPeacekeeperData = (req, res) => {
+  // Call the model function to fetch peacekeeper data
+  peacekeeperModel.getAllPeacekeepers((err, peacekeepers) => {
+    if (err) {
+      console.error("Error fetching peacekeeper data: ", err);
+      return res.status(500).json({
+        success: false,
+        error: true,
+        message: "Server error.",
+        details: err
       });
+    }
+    console.log(peacekeepers, "peacekeepers");
+    console.log(peacekeepers[0].file_name, "file_name");
+    console.log(peacekeepers.length, "length");
+
+    for (let i = 0; i < peacekeepers.length; i++) {
+      const imageFileNames = peacekeepers[i].file_name;
+      const protocol = "https";
+      const basePath = `${protocol}://${req.get("host")}/uploads`;
+      const imagePaths = imageFileNames
+        ? imageFileNames
+          .split(", ")
+          .map((fileName) => `${basePath}/${fileName.trim()}`)
+        : [];
+      console.log("Image Paths:", imagePaths);
+      peacekeepers[i].file_name = imagePaths;
+      console.log(i)
+    }
+    // If data is successfully fetched, return it in the response
+    return res.status(200).json({
+      success: true,
+      error: false,
+      data: peacekeepers,
+      message: "Peacekeeper data fetched successfully."
     });
-  } catch (error) {
-    console.error("Error during processing:", error);
-    return res.status(500).json({
-      success: false,
-      error: true,
-      message: "Internal Server Error.",
-      details: error
-    });
-  }
+  });
 };
 
 const getAllContactUsData = (req, res) => {
-  // Extract parameters from request body
-  let { page_no, page_size, search, sort_column, sort_order } = req.body;
-
-  // Ensure valid values
-  page_no = Number(page_no) > 0 ? Number(page_no) : 1;
-  page_size = Number(page_size) > 0 ? Number(page_size) : 10;
-  search = search 
-  sort_column = sort_column 
-  sort_order = sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
-
-  // Call the model function to fetch contact data
-  peacekeeperModel.getAllContactUs(page_no, page_size, search, sort_column, sort_order, (err, result) => {
+  // Call the model function to fetch peacekeeper data
+  peacekeeperModel.getAllContactUs((err, peacekeepers) => {
     if (err) {
-      console.error("Error fetching contact data: ", err);
+      console.error("Error fetching peacekeeper data: ", err);
       return res.status(500).json({
         success: false,
         error: true,
@@ -1074,20 +1006,15 @@ const getAllContactUsData = (req, res) => {
       });
     }
 
-    // Extract data and total count from stored procedure results
-    const contactData = result[0] || []; // First result set contains actual data
-    const totalRecords = result[1]?.[0]?.total_records || 0; // Second result set contains total records
-
+    // If data is successfully fetched, return it in the response
     return res.status(200).json({
       success: true,
       error: false,
-      data: contactData,
-      totalCount: totalRecords,
+      data: peacekeepers,
       message: "Contact data fetched successfully."
     });
   });
 };
-
 
 const getAllEmailData = async (req, res) => {
   try {
