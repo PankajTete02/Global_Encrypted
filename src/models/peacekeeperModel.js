@@ -109,8 +109,6 @@ const getAllPeacekeepers = (req, auth, callback) => {
   );
 };
 
-
-
 const getAllContactUs = (page_no, page_size, search, sort_column, sort_order, callback) => {
 const sql = `CALL USP_GetAllContactUsData(?, ?, ?, ?, ?);`;  // Correct parameter count
 

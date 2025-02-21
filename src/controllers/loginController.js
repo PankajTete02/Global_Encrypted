@@ -33,50 +33,50 @@ async function otpSend(email, otp) {
 	}
 }
 
-async function pwdSend(email, pwd) {
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: "Peacekeeper@global-jlp-summit.com", // Your Gmail
-            pass: "tusi xeoi hxoz fwwb", // Replace with App Password
-        },
-    });
+// async function pwdSend(email, pwd) {
+//     const transporter = nodemailer.createTransport({
+//         service: "gmail",
+//         auth: {
+//             user: "Peacekeeper@global-jlp-summit.com", // Your Gmail
+//             pass: "tusi xeoi hxoz fwwb", // Replace with App Password
+//         },
+//     });
 
-    const mailOptions = {
-        from: "Peacekeeper@global-jlp-summit.com",
-        to: email,
-        subject: "Your New Password",
-        text: `Your new password is: ${pwd}`,
-    };
+//     const mailOptions = {
+//         from: "Peacekeeper@global-jlp-summit.com",
+//         to: email,
+//         subject: "Your New Password",
+//         text: `Your new password is: ${pwd}`,
+//     };
 
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log("Email sent: " + info.response);
-        return info.response;
-    } catch (error) {
-        console.error("Error sending email: ", error);
-        throw error;
-    }
-}
+//     try {
+//         const info = await transporter.sendMail(mailOptions);
+//         console.log("Email sent: " + info.response);
+//         return info.response;
+//     } catch (error) {
+//         console.error("Error sending email: ", error);
+//         throw error;
+//     }
+// }
 
-function generateRandomPassword() {
-    const length = Math.floor(Math.random() * 2) + 7; // Randomly choose between 7 and 8 characters
-    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const lowercase = "abcdefghijklmnopqrstuvwxyz";
-    const numbers = "0123456789";
-    const specialChars = "!@#$%^&*";
-    const allChars = uppercase + lowercase + numbers + specialChars;
+// function generateRandomPassword() {
+//     const length = Math.floor(Math.random() * 2) + 7; // Randomly choose between 7 and 8 characters
+//     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+//     const lowercase = "abcdefghijklmnopqrstuvwxyz";
+//     const numbers = "0123456789";
+//     const specialChars = "!@#$%^&*";
+//     const allChars = uppercase + lowercase + numbers + specialChars;
 
-    let password = "";
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
-    password += specialChars[Math.floor(Math.random() * specialChars.length)];
+//     let password = "";
+//     password += uppercase[Math.floor(Math.random() * uppercase.length)];
+//     password += specialChars[Math.floor(Math.random() * specialChars.length)];
 
-    for (let i = 2; i < length; i++) {
-        password += allChars[Math.floor(Math.random() * allChars.length)];
-    }
+//     for (let i = 2; i < length; i++) {
+//         password += allChars[Math.floor(Math.random() * allChars.length)];
+//     }
 
-    return password.split("").sort(() => 0.5 - Math.random()).join(""); // Shuffle password
-}
+//     return password.split("").sort(() => 0.5 - Math.random()).join(""); // Shuffle password
+// }
 
 
 exports.sendOtp = async (req, res) => {
@@ -204,68 +204,13 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // Parameter Email ,  Password, Confirm Password and Update Password feild in the tbl_peacekeeper_volunteers 
-//Updated code 20/02/2025
+
 exports.updatePassword = async (req, res) => {
     try {
-		const verify_token= await VerifyToken(req,res);
-		// console.log(verify_token,"tkkkkk")
+		// const decrypt_details= await decrypt(req.body);
+		// console.log(decrypt_details,"decrypt_details");
 		
-		const parsedData = req.body;
-		console.log(parsedData,"parsedData");
-		const {email, oldPassword, newPassword} = parsedData;
-		console.log(email, oldPassword, newPassword);
-		
-        if (!email || !oldPassword || !newPassword) {
-		console.log(email, oldPassword, newPassword);
-
-            return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
-        }
-		const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])/;
-        if (!passwordRegex.test(newPassword)) {
-            return res.status(400).json({ success: false, error:true ,message: 'Password must contain at least one uppercase letter and one special character.' });
-        }
-		console.log(newPassword,"nppppp");
-		
-		const encryptedPassword =await encrypt(newPassword);
-		
-        const result = await otpModel.generatePassword(email,oldPassword, encryptedPassword);
-		console.log(result,"result");
-		// if()
-		if(result.status === -1){
-			return res.status(400).json({
-				message: result.message, 
-				status: 400,
-				success:false,
-				error:true
-			});}
-		if(result.status === 1){
-		return res.status(200).json({
-			message: result.data[0].message, 
-			status: 200,
-			success:true,
-			error:false
-		})
-	}else{
-		return res.status(400).json({
-			message: result, 
-			status: 400,
-			success:false,
-			error:true
-		});
-	}
-
-    } catch (error) {
-        console.error("Error in updatePassword:", error);
-        res.status(500).json({ message: 'Internal server error', error: error.message });
-    }
-};
-
-// ---------------Updated code -----------------
-// genrate password
-exports.insertPassword = async (req, res) => {
-    try {
-		 await VerifyToken(req,res);
-
+        // const parsedData = JSON.parse(decrypt_details);
 		const parsedData = req.body;
 		console.log(parsedData,"parsedData");
 		const {email, password, confirmPassword} = parsedData;
@@ -279,13 +224,10 @@ exports.insertPassword = async (req, res) => {
         if (password !== confirmPassword) {
             return res.status(400).json({ success: false, error:true,message: 'Password and Confirm Password do not match.' });
         }
-		console.log(password,"password");
 		
 		const encryptedPassword =await encrypt(password);
-		console.log(encryptedPassword,"encryptedPassword");
 		
-		
-        const result = await otpModel.insertPassword(email, encryptedPassword);
+        const result = await otpModel.generatePassword(email, encryptedPassword);
 		// console.log(result,"result");
 	
 		if(result.success == 1){
@@ -297,7 +239,7 @@ exports.insertPassword = async (req, res) => {
 		});
 	}else{
 		return res.status(400).json({
-			message: result, 
+			message: result[0].message, 
 			status: 400,
 			success:false,
 			error:true
@@ -310,44 +252,94 @@ exports.insertPassword = async (req, res) => {
     }
 };
 
-exports.forgetPassword = async (req, res) => {
-    try {
-        const { email } = req.body;
-		await VerifyToken(req,res);
+// ---------------New Updations in change pwd----------------------------
+// genrate password
+// exports.insertPassword = async (req, res) => {
+//     try {
+// 		 await VerifyToken(req,res);
+
+// 		const parsedData = req.body;
+// 		console.log(parsedData,"parsedData");
+// 		const {email, password, confirmPassword} = parsedData;
+//         if (!email || !password || !confirmPassword) {
+//             return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
+//         }
+// 		const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])/;
+//         if (!passwordRegex.test(password)) {
+//             return res.status(400).json({ success: false, error:true ,message: 'Password must contain at least one uppercase letter and one special character.' });
+//         }
+//         if (password !== confirmPassword) {
+//             return res.status(400).json({ success: false, error:true,message: 'Password and Confirm Password do not match.' });
+//         }
+// 		console.log(password,"password");
 		
-        if (!email) {
-            return res.status(400).json({ success: false, error: true, message: "Email is required." });
-        }
+// 		const encryptedPassword =await encrypt(password);
+// 		console.log(encryptedPassword,"encryptedPassword");
+		
+		
+//         const result = await otpModel.insertPassword(email, encryptedPassword);
+// 		// console.log(result,"result");
+	
+// 		if(result.success == 1){
+// 		return res.status(200).json({
+// 			message: result.message, 
+// 			status: 200,
+// 			success:true,
+// 			error:false
+// 		});
+// 	}else{
+// 		return res.status(400).json({
+// 			message: result, 
+// 			status: 400,
+// 			success:false,
+// 			error:true
+// 		});
+// 	}
 
-        // Generate a random password
-        const newPassword = generateRandomPassword();
-        await pwdSend(email, newPassword);
-        const encryptedPassword = await encrypt(newPassword);
+//     } catch (error) {
+//         console.error("Error in updatePassword:", error);
+//         res.status(500).json({ message: 'Internal server error', error: error.message });
+//     }
+// };
 
-        const result = await otpModel.forgetPassword(email, encryptedPassword);
-			// console.log(result,"result");
+// exports.forgetPassword = async (req, res) => {
+//     try {
+//         const { email } = req.body;
+// 		await VerifyToken(req,res);
+		
+//         if (!email) {
+//             return res.status(400).json({ success: false, error: true, message: "Email is required." });
+//         }
+
+//         // Generate a random password
+//         const newPassword = generateRandomPassword();
+//         await pwdSend(email, newPassword);
+//         const encryptedPassword = await encrypt(newPassword);
+
+//         const result = await otpModel.forgetPassword(email, encryptedPassword);
+// 			// console.log(result,"result");
 			
-        if (result) {
-            return res.status(200).json({
-                message: result.message,
-                status: 200,
-                success: true,
-                error: false,
-            });
-        } else {
-            return res.status(400).json({
-                message: result,
-                status: 400,
-                success: false,
-                error: true,
-            });
-        }
-    } catch (error) {
-        console.error("Error in forgetPassword:", error);
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-};
-
+//         if (result) {
+//             return res.status(200).json({
+//                 message: result.message,
+//                 status: 200,
+//                 success: true,
+//                 error: false,
+//             });
+//         } else {
+//             return res.status(400).json({
+//                 message: result,
+//                 status: 400,
+//                 success: false,
+//                 error: true,
+//             });
+//         }
+//     } catch (error) {
+//         console.error("Error in forgetPassword:", error);
+//         res.status(500).json({ message: "Internal server error", error: error.message });
+//     }
+// };
+// ---------------END Updated code------------------------------------------
 exports.fetchLookupData = async (req, res) => {
 	const inputData = req.body;
 	otpModel.getLookupData(inputData, (err, data) => {

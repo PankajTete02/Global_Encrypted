@@ -37,65 +37,41 @@ exports.verifyOtp = async (email, otp) => {
 };
 
 
-exports.generatePassword = async (email,oldpassword, newpassword) => {
-    try {
+exports.generatePassword = async (email, password) => {
+  try {
 
-        const pwdSql = `CALL USP_GLOBAL_GET_PWD(?)`;
-        const [pwdResult] = await db.promise().query(pwdSql, [email]);
-        // console.log(pwdResult,"pwdResult");
-        
-
-      const userPwdData = pwdResult[0][0];
-    //   console.log("User password data:", userPwdData);
-
-      if (userPwdData.is_pwd_generated === -1) {
-        return { success: false, error: true, message: "User does not exist" , status :-1 };
-      }
-
-      if (userPwdData.is_pwd_generated == 1) {
-        const encryptedPassword = userPwdData.pv_password;
-         let decryptedPassword = "";
-
-           decryptedPassword = CryptoJS.AES.decrypt(encryptedPassword, process.env.ENCRYPTION_KEY)
-            .toString(CryptoJS.enc.Utf8)
-            .replace(/"/g, "");
-        console.log(decryptedPassword,"pssd");
-        
-      if (decryptedPassword === oldpassword) {
-        const updateResut = await db.promise().query('CALL USP_AUTH_UPDATE_PWD(?,?)', [email, newpassword]);         
-        return { success: true, data:updateResut[0][0], status:1 };
-      }else{
-        return { success: true, status:-1 ,message: 'Old Password not matched.' };
-      }
-    }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
+      const rows = await db.promise().query('CALL USP_GENERATE_PEACEKEEPER_PASSWORD(?, ?)', [email, password]);
+  // console.log(rows[0][0],"rows");
+  
+      return rows[0][0];
+  } catch (error) {
+      return { success: false, message: error.message };
+  }
 };
 
 // ---------------Updated code -----------------
-exports.insertPassword = async (email, password) => {
-    try {
+// exports.insertPassword = async (email, password) => {
+//     try {
             
-        const rows = await db.promise().query('CALL USP_AUTH_INSERT_PWD(?, ?)', [email, password]);
-		// console.log(rows,"rows");
+//         const rows = await db.promise().query('CALL USP_AUTH_INSERT_PWD(?, ?)', [email, password]);
+// 		// console.log(rows,"rows");
 		
-        return { success: true, message: rows[0].message || 'Password created successfully.' };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-};
-exports.forgetPassword = async (email, pwd) => {
-    try {
+//         return { success: true, message: rows[0].message || 'Password created successfully.' };
+//     } catch (error) {
+//         return { success: false, message: error.message };
+//     }
+// };
+// exports.forgetPassword = async (email, pwd) => {
+//     try {
  
-        const rows = await db.promise().query('CALL USP_AUTH_FORGET_PWD(?, ?)', [email, pwd]);
-		// console.log(rows,"rows");
+//         const rows = await db.promise().query('CALL USP_AUTH_FORGET_PWD(?, ?)', [email, pwd]);
+// 		// console.log(rows,"rows");
 		
-        return { success: true, message: rows[0].message || 'Password sent successfully.' };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-};
+//         return { success: true, message: rows[0].message || 'Password sent successfully.' };
+//     } catch (error) {
+//         return { success: false, message: error.message };
+//     }
+// };
 
 exports.getLookupData   = async (lookupdata, callback) => {
     const query = "CALL USP_GLOBAL_FETCH_LOOKUP_MASTER(?, ?)";
