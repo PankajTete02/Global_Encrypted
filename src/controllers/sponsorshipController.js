@@ -1,5 +1,5 @@
 const SponsorshipModel = require('../models/sponsorshipModel');
-const { checkEmailExists } = require("../models/collaboratorModel");
+const { checkEmailExists } = require("../models/sponsorshipModel");
 
 exports.getAllSponsorships = async (req, res) => {
   try {
@@ -33,8 +33,8 @@ exports.getSponsorshipById = async (req, res) => {
 
 exports.createSponsorship = async (req, res) => {
   try {
-    const { email } = req.body;
-    const exists = await checkEmailExists(email, null);
+    const { poc_email } = req.body;
+    const exists = await checkEmailExists(poc_email, null);
     if (exists) return res.status(400).json({ message: "Email already exists." });
 
     await SponsorshipModel.create(req.body);
@@ -46,8 +46,8 @@ exports.createSponsorship = async (req, res) => {
 
 exports.updateSponsorship = async (req, res) => {
   try {
-    const { email } = req.body;
-    const exists = await checkEmailExists(email, req.params.id);
+    const { poc_email } = req.body;
+    const exists = await checkEmailExists(poc_email, req.params.id);
     if (exists) return res.status(400).json({ message: "Email already exists." });
 
     await SponsorshipModel.update(req.params.id, req.body);
