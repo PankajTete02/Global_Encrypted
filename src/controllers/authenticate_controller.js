@@ -83,7 +83,7 @@ const authenticate_controller={
 // },
 
 
-  login_peacekeeper: async (req, res) => {
+login_peacekeeper: async (req, res) => {
   try {
     const { email, password, device_id, os_type, loginVia, otp } = req.body;
 
@@ -110,7 +110,7 @@ const authenticate_controller={
     console.error("Login Error:", error);
     return res.status(500).json({ success: false, error: true, message: "Internal Server Error" });
   }
-  },
+},
 
   download_badge : async(req,res)=>{
     try{

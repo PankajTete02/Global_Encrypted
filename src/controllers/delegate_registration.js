@@ -6,16 +6,19 @@ const qr_code = require("../middleware/qrcode_urn_no")
 const notification = require("../../middlewares/email")
 const fs = require('fs');
 const path = require('path');
-const IP=require('ip');
 const { log, count } = require("console");
-const {VerifyToken,encrypt}=require("../middleware/auth");
-
-
 exports.Delegatedetails = async function (req, res) {
   const new_details = new Delegatedetails(req.body);
   userEmail = req.body.email_id;
   username = req.body.title + ' ' + req.body.first_name + ' ' + req.body.last_name
- 
+  //  Check if status is valid
+  // if (!['0', '1', '2'].includes(new_details.status)) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     error: true,
+  //     message: "Invalid status value. Status must be 0, 1, or 2.",
+  //   });
+  // }
 
   try {
     const details = await new Promise((resolve, reject) => {
@@ -28,6 +31,16 @@ exports.Delegatedetails = async function (req, res) {
         }
       });
     });
+    // Delegatedetails.create(new_details, function (err, details) {
+    //   if (err) {
+    //     console.log(err);
+    //     return res.status(400).json({
+    //       status: false,
+    //       error: true,
+    //       message: "Something went wrong. Please try again.",
+
+    //     });
+    //   }
     if (details[0][0].response === "fail") {
       console.log(userEmail, username);
       return res.json({
@@ -104,14 +117,9 @@ exports.findAll = function (req, res) {
   });
 };
 // ------------------------------------Delegate Form ------------------------------------------------------------------
-exports.findById = async function (req, res) {
-  try {
-    // Verify the token
-    const auth = await VerifyToken(req, res);
-    console.log(auth, "auth");
-
-    // Fetch the delegate details
-    Delegatedetails.findById(req, res, auth, async function (err, Details) {
+exports.findById = function (req, res) {
+  Delegatedetails.findById(
+    function (err, Details) {
       if (err) {
         console.log(err);
         return res.status(400).json({
@@ -120,36 +128,17 @@ exports.findById = async function (req, res) {
           message: "Something went wrong. Please try again.",
         });
       }
-
-      console.log(Details[0].status, "Details");
-      const encrypted_data = await encrypt(Details);
-      console.log(encrypted_data, "encrypted_data");
-
-      if (Details[0].status == 1) {
+      else
+        // console.log("avbsbs", Details);
         return res.json({
-          success: false,
-          error: true,
-          message: Details[0].result,
-        });
-      } else {
-        return res.json({
-          data: encrypted_data,
+          data: Details,
           success: true,
           error: false,
           message: "Delegate Details fetched successfully!",
         });
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: false,
-      error: true,
-      message: "Internal Server Error. Please try again.",
-    });
-  }
+    }
+  );
 };
-
 
 // ==============Approve-Delegate=========
 
@@ -204,7 +193,6 @@ exports.findByApproved = async function (req, res) {
     });
   }
 };
-
 
 
 //-------------------------------------Partner Form ----------------------------------------------
@@ -473,7 +461,6 @@ exports.update_status = function (req, res) {
             return res.status(500).json({ error: 'An error occurred' });
           }
           console.log("status", filepath, userNames, companys, designations, statusType, userEmails, urn_nos, qr_codes, userNumbers);
-          
           return res.json({
             message: 'Status Updated Successfully!',
             success: true,

@@ -34,5 +34,4 @@ router.post('/amb_badge', authenicate.amb_badge);
 router.put('/edit-peacekeeper',upload.single('profile_picture') ,authenicate.edit_peacekeeper);
 router.post('/get_peacekeeper_details_by_id', authenicate.peacekeeper_details_id);
 router.post('/get_all_delegate_details_by', authenicate.get_delegate_details_id);
-router.post('/QR_CODE', authenicate.tinyurl_QR_code);
 module.exports = router;

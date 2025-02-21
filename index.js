@@ -34,8 +34,13 @@ const cors = require("cors");
 
 // Setup server port
 const port = process.env.PORT || 4000;
+
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }))
+
+//app.use(express.json({ limit: "50mb" })); // Increase limit for JSON payloads
+//app.use(express.urlencoded({ limit: "50mb", extended: true })); // Increase limit for URL-encoded data
+
 // parse requests of content-type - application/json
 app.use(bodyParser.json())
 // const Pending_report = require('./src/routes/PendingReport.routes')
@@ -82,8 +87,8 @@ const delegateProfileRoute = require("./src/routes/delegateProfileRoute");
 const contactUsRoutes = require("./src/routes/contactUsRoutes");
 const peacekeeperRoutes = require("./src/routes/peacekeeperRoutes");
 const authenicate=require("./src/routes/authenticate_route");
-const invitationRoute=require("./src/routes/invitationRoute");
 const loginRoute=require("./src/routes/loginRoute");
+
 
 app.get('/', (req, res) => {
 
@@ -99,7 +104,6 @@ app.use("/api/v1/brochure", brochure);
 app.use("/api/v1/subscriber", subscriber);
 app.use("/api/v1/registration", delegateProfileRoute);
 app.use("/api/v1", contactUsRoutes);
-app.use("/api/v1", authenicate);
 // app.use("/api/v1", Router);
 app.use("/uploads", express.static("src/uploads/profile_pics"));
 app.use("/uploads", express.static("src/uploads/qrcodes"));
@@ -108,14 +112,23 @@ app.use("/uploads/batch", express.static("src/uploads/batch"));
 app.use("/uploads/batch/photo", express.static("src/uploads/batch_photo"));
 app.use("/uploads/batch_pdf", express.static("src/uploads/batch_pdf"));
 app.use("/middle_ware/photo", express.static("src/middleware/assets/images"));
-app.use("/api/v1", invitationRoute);
-app.use("/api/v1", loginRoute);
-app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
-app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
+app.use("/uploads/ticket/photo", express.static("src/uploads/Ticket_photo"));
+app.use("/uploads/ticket_pdf", express.static("src/uploads/Ticket_pdf"));
+
+// Use the Collaborator sponsorship
+//app.use("/collaborator/qr", express.static(path.join(__dirname, "src/uploads/collaborator/qr")));
+//app.use("/collaborator/batch/image", express.static(path.join(__dirname, "src/uploads/collaborator/batch/image")));
+//app.use("/collaborator/batch/pdf", express.static(path.join(__dirname, "src/uploads/collaborator/batch/pdf")));
+
+//app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
+//app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
 
 // Use the peacekeeper routes
 app.use('/api/v1', peacekeeperRoutes);
 app.use("/api/v1", Router);
+app.use("/api/v1", authenicate);
+app.use("/api/v1", loginRoute);
+
 
 // --------------------------------------Join Mailing Captcha----------------------------------------------------------------------------
 

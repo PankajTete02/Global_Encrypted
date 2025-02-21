@@ -19,5 +19,7 @@ const delegateProfileController = require('../controllers/delegateProfileControl
 router.post('/create-delegate-profile', delegateProfileController.createDelegateProfile);
 router.post('/create-nomination-profile', delegateProfileController.createNominateProfile);
 router.post('/verify_session_stripe_payment', delegateProfileController.verify_session_status);
+router.get('/download_badge/:email', delegateProfileController.download_badge);
+router.post('/create-delegate-profile-whatapp', delegateProfileController.createDelegateProfile_whatapp);
 
 module.exports = router;

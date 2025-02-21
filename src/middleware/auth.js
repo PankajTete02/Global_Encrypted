@@ -29,16 +29,7 @@ async function VerifyToken(req, res, next) {
   try {
     UsersTo = jwt.verify(token2, process.env.SECRET_KEY);
     console.log("Verified User:", UsersTo);
-    console.log(UsersTo, "ZZZZZZ");
-    
-    // Add 200 success response
-    res.status(200).json({
-      message: "Token verified successfully",
-      error: false,
-      success: true,
-      user: UsersTo
-    });
-    
+    console.log(UsersTo,"ZZZZZZ");
     return UsersTo;
   }
   catch (err) {
@@ -78,7 +69,6 @@ async function decrypt(encryptedData) {
     return null; // or throw error depending on your use case
   }
 }
-
 
 
 module.exports = { VerifyToken, encrypt, decrypt };

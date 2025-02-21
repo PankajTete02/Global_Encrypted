@@ -30,7 +30,8 @@ const insertDelegateProfile = (req, delegateData, callback) => {
         reference_no,
         country_id,
         state_id,
-        city_id
+        city_id,
+        is_nomination
     } = delegateData;
 
     console.log("delgate",delegateData);
@@ -38,14 +39,15 @@ const insertDelegateProfile = (req, delegateData, callback) => {
     const conference_lever_interest1 = JSON.stringify(req.body.conference_lever_interest);
     const sql = `
         CALL SP_INSERT_DELEGATE_PROFILE(
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?
         )`;
 
     const values = [
         title, first_name, last_name, country_code, mobile_number, email_id,
         linkedIn_profile, instagram_profile, dob, profession_1, profession_2, website,
         organization_name, address, country, state, city, pin_code, attend_summit,
-        attendee_purpose, conference_lever_interest1, created_by, status, passport_no, passport_issue_by, reference_no, country_id,state_id, city_id
+        attendee_purpose, conference_lever_interest1, created_by, status, passport_no, passport_issue_by, reference_no, country_id,state_id, city_id,
+        is_nomination
     ];
 
     pool.query(sql, values, (err, results) => {
@@ -53,10 +55,8 @@ const insertDelegateProfile = (req, delegateData, callback) => {
             return callback(err, null);
         }
 
-        
         const response = results[0][0]; 
 
-        // Handling based on stored procedure response
         if (response.response === "fail") {
             return callback(null, { response: "fail" });
         }
@@ -75,7 +75,25 @@ const insertDelegateProfile = (req, delegateData, callback) => {
     });
 };
 
-const insert_nomination = (req) => {
+const download_badge = async (req, res) => {
+    try {
+      console.log("B"); 
+      const sql = `CALL USP_DOWNLOAD_BADGE(?)`;
+      console.log(req.params.email,"email");
+      const [result] = await pool.promise().query(sql, [req.params.email]);
+      console.log("Login Result:", result);
+  
+      console.log(result,"ckec")
+      // Return the response
+      return result;
+  
+    } catch (error) {
+      console.error("Database Error:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+
+  const insert_nomination = (req) => {
     return new Promise((resolve, reject) => {
       const sql_query = `CALL USP_INSERT_NOMINATION_DETAILS(?, ?, ?, ?, ?,?,?)`;
   
@@ -102,8 +120,8 @@ const insert_nomination = (req) => {
       );
     });
   };
-  
-const get_nomination_details =(req)=>{
+
+  const get_nomination_details =(req)=>{
 
     return new Promise((resolve, reject) => {
         const sql_query = `CALL USP_NOMINATION_DETAILS_GET_NOMINATION_ID(?)`;
@@ -123,10 +141,11 @@ const get_nomination_details =(req)=>{
           }
         );
       });
-};  
+}; 
 
 module.exports = {
     insertDelegateProfile,
+    download_badge,
     insert_nomination,
     get_nomination_details
 };

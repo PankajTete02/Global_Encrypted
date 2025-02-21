@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+﻿const nodemailer = require('nodemailer');
 const delegateProfileModel = require('../models/delegateProfileModel');
 const path = require('path');
 const fs = require('fs');
@@ -9,7 +9,6 @@ const { createCanvas, loadImage } = require("canvas");
 // const { PDFDocument } = require('pdf-lib');
 const { PDFDocument } = require('pdf-lib');
 const peacekeeperModel = require('../models/peacekeeperModel');
-const { error } = require('console');
 //const stripe = require('stripe')(process.env.STRIPE_TEST);
 const stripe = require('stripe')('sk_test_51QSuqmCco9ltycd0nRlrJoCLGhFItJ1IEzUqdMUimJ14hNOvWLCGiQbiNTrzDOOWAVCnEesjlcnZ6Vu0Wd4ozbNQ00Suza4H9F');
 //live
@@ -17,6 +16,1340 @@ const stripe = require('stripe')('sk_test_51QSuqmCco9ltycd0nRlrJoCLGhFItJ1IEzUqd
 // Ensure the directory exists, if not, create it
 
 const createDelegateProfile = (req, res) => {
+  const {
+    title,
+    first_name,
+    last_name,
+    country_code,
+    mobile_number,
+    email_id,
+    linkedIn_profile,
+    instagram_profile,
+    dob,
+    profession_1,
+    profession_2,
+    website,
+    organization_name,
+    address,
+    country,
+    state,
+    city,
+    pin_code,
+    attend_summit,
+    attendee_purpose,
+    conference_lever_interest,
+    created_by,
+    status,
+    passport_no,
+    passport_issue_by,
+    reference_no,
+    country_id,
+    state_id,
+    city_id,
+    is_nomination
+  } = req.body;
+
+  const requiredFields = [
+    "title",
+    "first_name",
+    "last_name",
+    "country_code",
+    "mobile_number",
+    "email_id",
+    "dob",
+    "profession_1",
+    "country",
+    "city",
+    "attendee_purpose",
+    "conference_lever_interest",
+    "is_nomination"
+  ];
+
+  const errors = [];
+
+  requiredFields.forEach(field => {
+    if (!req.body[field]) {
+      errors.push(`${field} is required`);
+    }
+  });
+
+  // Validate specific fields
+  if (req.body.mobile_number && !/^\d+$/.test(req.body.mobile_number)) {
+    errors.push("mobile_number should be a valid number");
+  }
+
+  if (req.body.dob) {
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(req.body.dob)) {
+      errors.push("dob should be in the format YYYY-MM-DD");
+    } else {
+      const dobDate = new Date(req.body.dob);
+      const today = new Date();
+      if (dobDate >= today) {
+        errors.push("dob should be a past date");
+      }
+    }
+  }
+
+  // If there are validation errors, return response
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      error: true,
+      message: errors[0]
+    });
+  }
+
+  // If everything is valid, continue processing...
+
+
+  const delegateData = {
+    title,
+    first_name,
+    last_name,
+    country_code,
+    mobile_number,
+    email_id,
+    linkedIn_profile,
+    instagram_profile,
+    dob,
+    profession_1,
+    profession_2,
+    website,
+    organization_name,
+    address,
+    country,
+    state,
+    city,
+    pin_code,
+    attend_summit,
+    attendee_purpose,
+    conference_lever_interest,
+    created_by,
+    status,
+    passport_no,
+    passport_issue_by,
+    reference_no,
+    country_id,
+    state_id,
+    city_id,
+    is_nomination
+  };
+
+  // Call model function to insert the delegate profile
+  delegateProfileModel.insertDelegateProfile(req, delegateData, async (err, response) => {
+    if (err) {
+      console.error("Error inserting delegate profile: ", err);
+      return res.status(500).json({
+        success: false,
+        error: true,
+        message: "Server error.",
+        details: err
+      });
+    }
+
+    // Handling the response based on status
+    if (response.response === "fail") {
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Email already registered as delegate."
+      });
+    }
+    else if (response.response === "fail1") {
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Mobile number with the given country code already registered."
+      });
+    }
+    else if (response.response === "Coupon code invalid") {
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Coupon code invalid"
+      });
+    }
+    else if (response.response === "success") {
+      console.log(response,"cjeedvfdv");
+      console.log(is_nomination,"response.nomination");
+       
+          console.log(email_id,"email_id_check");
+          const nomination = [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: 'Without coupon',
+                },
+                unit_amount: 280000,
+              },
+              quantity: 1,
+            },
+          ];
+        
+          const delegate = [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: reference_no.length === 0 ? 'Without coupon' : 'With coupon',
+                },
+                unit_amount: reference_no.length === 0 ? 280000 : 260400,
+              },
+              quantity: 1,
+            },
+          ];
+       
+         
+          // const session = await stripe.checkout.sessions.create({
+          //   payment_method_types: ['card'],
+          //   customer_email: email_id, 
+          //   line_items: is_nomination === 1 ? line_items1 : line_items2,
+          //   mode: 'payment',
+          //   // success_url: `https://www.justice-love-peace.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
+          //   // cancel_url: `https://www.justice-love-peace.com/cancel`, // Redirect on cancellation
+          //   success_url: `https://globaljusticeuat.cylsys.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
+          //   cancel_url: `https://globaljusticeuat.cylsys.com/`,
+          //   expires_at: Math.floor(Date.now() / 1000) + 86400, // Set expiry time to 24 hours from now
+          // });
+         
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer_email: email_id,
+            line_items: is_nomination === "1" ? nomination : delegate,
+            mode: 'payment',
+            success_url: `https://www.justice-love-peace.com/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `https://www.justice-love-peace.com/`,
+            expires_at: Math.floor(Date.now() / 1000) + 86400,
+          });
+        
+         
+     
+     
+      
+      console.log("sess", session);
+      // const discount_url=`https://globaljusticeuat.cylsys.com/payment-status/?email=${email_id}`;
+      const discount_url = `${session.url}`
+      const with_discount = `<!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8" />
+                <title>Discount</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <style>
+                  .mq {
+                    width: 710px;
+                  }
+            
+                  /* Extra small devices (phones, 600px and down) */
+                  @media only screen and (max-width: 600px) {
+                    .mq {
+                      width: 300px;
+                    }
+                    .mqfont {
+                      font-size: 16px;
+                    }
+                  }
+            
+                  /* Small devices (portrait tablets and large phones, 600px and up) */
+                  @media only screen and (min-width: 600px) {
+                    .mq {
+                      width: 300px;
+                    }
+                  }
+            
+                  /* Medium devices (landscape tablets, 768px and up) */
+                  @media only screen and (min-width: 768px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+            
+                  /* Large devices (laptops/desktops, 992px and up) */
+                  @media only screen and (min-width: 992px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+            
+                  /* Extra large devices (large laptops and desktops, 1200px and up) */
+                  @media only screen and (min-width: 1200px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+                  .mqimg {
+                    width: 100px !important;
+                  }
+                  .mqimg1 {
+                    width: 100px !important;
+                  }
+                  .mqimg1 {
+                    width: 100px !important;
+                  }
+                </style>
+              </head>
+              <body style="padding: 0px; margin: 0px">
+                <table
+                  width="100%"
+                  border="0"
+                  cellspacing="0"
+                  cellpadding="0"
+                  align="center"
+                  style="
+                    font-family: Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td>
+                        <table
+                          width="710"
+                          border="0"
+                          cellspacing="0"
+                          cellpadding="5"
+                          align="center"
+                        >
+                          <tbody>
+                            <tr>
+                              <td style="padding: 0">
+                                <img src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/head.png" alt="" width="100%" />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <table
+                          width="710"
+                          border="0"
+                          cellspacing="0"
+                          cellpadding="5"
+                          align="center"
+                          style="
+                            background: linear-gradient(180deg, #bdc78c2e 0%, #bdc78c 100%);
+                          "
+                        >
+                          <tbody>
+                            <tr>
+                              <td>
+                                <table style="padding: 0 50px">
+                                  <tbody>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td
+                                                style="
+                                                  font-size: 18px;
+                                                  line-height: 25px;
+                                                  font-family: Gotham, 'Helvetica Neue',
+                                                    Helvetica, Arial, sans-serif;
+                                                "
+                                              >
+                                                <p><b>Hi ${first_name} ${last_name} ,</b></p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  Thank you for submitting your registration
+                                                  for the Global Justice, Love & Peace
+                                                  Summit in Dubai on 12th-13th April 2025.
+                                                </p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  We are delighted to confirm that your
+                                                  reference QR code has been successfully
+                                                  applied, entitling you to an exclusive 7%
+                                                  discount on the registration fee. To
+                                                  complete your registration, please proceed
+                                                  with the discounted payment of USD 2604 via
+                                                  the link below:
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                          style="padding: 0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 700;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    color: #128940;
+                                                    display: flex;
+                                                    align-items: center;
+                                                  "
+                                                >
+                                                  Payment Link Here -
+                                                  <a href=${discount_url}  target="_blank"
+                                                    style="
+                                                     background-color: #128940;
+                                                      color: #ffffff;
+                                                      box-shadow: 0px 0px 5px 1px #12894066;
+                                                      border: none;
+                                                      width: 81px;
+                                                      padding: 3px;
+                                                      border-radius: 5px;
+                                                      margin: 0 10px;
+                                                      text-decoration: none;
+                                                      text-align: center;
+                                                    "
+                                                  >
+                                                    Pay
+                                                  </a>
+                                                </p>
+                                              </td>
+                                            </tr>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  We are excited to have you join us at this
+                                                  extraordinary event. Should you require
+                                                  any assistance, our support team is here
+                                                  to help.
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 400;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    margin: 0;
+                                                  "
+                                                >
+                                                  Warm regards,
+                                                </p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 600;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    margin: 0;
+                                                    color: #005a93;
+                                                  "
+                                                >
+                                                  The Global Justice, Love & Peace Summit
+                                                  Team
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                                <br /><br />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <table
+                                  width="100%"
+                                  border="0"
+                                  cellspacing="0"
+                                  cellpadding="0"
+                                  style="
+                                    border-top: 1px solid #fff;
+                                    border-bottom: 1px solid #fff;
+                                  "
+                                >
+                                  <tbody>
+                                    <tr>
+                                      <td>
+                                        <table width="100%">
+                                          <tbody>
+                                            <tr>
+                                              <td align="center">
+                                                <p
+                                                  style="
+                                                    font-size: 10px;
+                                                    font-weight: 400;
+                                                    line-height: 18px;
+                                                    text-align: center;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  For any assistance or support, please
+                                                  reach out to us at
+                                                  <a
+                                                    style="color: #0573ba"
+                                                    href="mailto:help@justice-love-peace.com"
+                                                    >help@justice-love-peace.com</a
+                                                  >
+                                                  <br />
+                                                  Explore more on our website:
+                                                  <a
+                                                    style="color: #0573ba"
+                                                    href="https://www.justice-love-peace.com"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    >www.justice-love-peace.com</a
+                                                  >
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td align="center">
+                                        <table width="100%" style="padding: 1rem 12rem">
+                                          <tbody>
+                                            <tr>
+                                              <td align="center">
+                                                <a
+                                                  href="https://www.instagram.com/globaljusticelovepeacesummit/"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/insta.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                
+                                                  href="https://www.facebook.com/GlobalJusticeLoveandPeaceSummit
+                                      "
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/fb.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                 
+                                                  href="https://www.youtube.com/@GlobalJusticeLovePeaceSummit/videos"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/youtube.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                  
+                                                  href="https://wa.me/+91 9324064978"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/whatsApp.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                 
+                                                  href="https://www.linkedin.com/company/global-justice-love-peace-summit-2025/posts/?feedView=all"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/linkedIn.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td align="center">
+                                <table>
+                                  <tbody>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        © 2025 Global Justice, Love & Peace Summit. All
+                                        rights reserved.
+                                        <br />
+                                        <br />
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        You are receiving this message because you
+                                        registered to join the movement for Global Justice,
+                                        Love & <br />
+                                        Peace. By signing up, you agreed to our Terms of Use
+                                        and Privacy Policies.
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        <ul
+                                          style="
+                                            display: flex;
+                                            padding: 0;
+                                            justify-content: space-between;
+                                          "
+                                        >
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/accessibility"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Accessibility</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/privacy-policy"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Privacy policy</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/cookie-policy"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Cookie Policy</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/terms-of-use"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Terms of use</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/visitor-terms-conditions"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Visitor Terms and Conditions</a
+                                            >
+                                          </li>
+                                        </ul>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </body>
+            </html>`
+      const with_full = `<!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8" />
+                <title>Submitting Registration</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <style>
+                  .mq {
+                    width: 710px;
+                  }
+            
+                  /* Extra small devices (phones, 600px and down) */
+                  @media only screen and (max-width: 600px) {
+                    .mq {
+                      width: 300px;
+                    }
+                    .mqfont {
+                      font-size: 16px;
+                    }
+                  }
+            
+                  /* Small devices (portrait tablets and large phones, 600px and up) */
+                  @media only screen and (min-width: 600px) {
+                    .mq {
+                      width: 300px;
+                    }
+                  }
+            
+                  /* Medium devices (landscape tablets, 768px and up) */
+                  @media only screen and (min-width: 768px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+            
+                  /* Large devices (laptops/desktops, 992px and up) */
+                  @media only screen and (min-width: 992px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+            
+                  /* Extra large devices (large laptops and desktops, 1200px and up) */
+                  @media only screen and (min-width: 1200px) {
+                    .mq {
+                      width: 710px;
+                    }
+                  }
+                  .mqimg {
+                    width: 100px !important;
+                  }
+                  .mqimg1 {
+                    width: 100px !important;
+                  }
+                  .mqimg1 {
+                    width: 100px !important;
+                  }
+                </style>
+              </head>
+              <body style="padding: 0px; margin: 0px">
+                <table
+                  width="100%"
+                  border="0"
+                  cellspacing="0"
+                  cellpadding="0"
+                  align="center"
+                  style="
+                    font-family: Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td>
+                        <table
+                          width="710"
+                          border="0"
+                          cellspacing="0"
+                          cellpadding="5"
+                          align="center"
+                        >
+                          <tbody>
+                            <tr>
+                              <td style="padding: 0">
+                                <img src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/head.png" alt="" width="100%" />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <table
+                          width="710"
+                          border="0"
+                          cellspacing="0"
+                          cellpadding="5"
+                          align="center"
+                          style="
+                            background: linear-gradient(180deg, #bdc78c2e 0%, #bdc78c 100%);
+                          "
+                        >
+                          <tbody>
+                            <tr>
+                              <td>
+                                <table style="padding: 0 50px">
+                                  <tbody>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td
+                                                style="
+                                                  font-size: 18px;
+                                                  line-height: 25px;
+                                                  font-family: Gotham, 'Helvetica Neue',
+                                                    Helvetica, Arial, sans-serif;
+                                                "
+                                              >
+                                                <p><b>Hi ${first_name} ${last_name},</b></p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  Thank you for submitting your registration
+                                                  for the Global Justice, Love & Peace
+                                                  Summit in Dubai on 12th-13th April 2025.
+                                                </p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  We are thrilled to have you join us at
+                                                  this momentous gathering. To complete your
+                                                  registration, please proceed with the
+                                                  payment of USD 2800 via the link below:
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                          style="padding: 0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 700;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    color: #128940;
+                                                    display: flex;
+                                                    align-items: center;
+                                                  "
+                                                >
+                                                  Payment Link Here -
+                                                  <a href=${discount_url} target="_blank"
+                                                    style="
+                                                      background-color: #128940;
+                                                      color: #ffffff;
+                                                      box-shadow: 0px 0px 5px 1px #12894066;
+                                                      border: none;
+                                                      width: 81px;
+                                                      padding: 3px;
+                                                      border-radius: 5px;
+                                                      margin: 0 10px;
+                                                      text-decoration: none;
+                                                      text-align: center;
+                                                    "
+                                                  >
+                                                    Pay
+                                                  </a>
+                                                </p>
+                                              </td>
+                                            </tr>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 500;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  We eagerly await your participation in
+                                                  this inspiring event. Should you need any
+                                                  assistance, please do not hesitate to
+                                                  reach out to our support team.
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td>
+                                        <table
+                                          width="100%"
+                                          border="0"
+                                          cellspacing="0"
+                                          cellpadding="0"
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 400;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    margin: 0;
+                                                  "
+                                                >
+                                                  Warm regards,
+                                                </p>
+                                                <p
+                                                  style="
+                                                    font-size: 14px;
+                                                    font-weight: 600;
+                                                    line-height: 22px;
+                                                    text-align: left;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                    margin: 0;
+                                                    color: #005a93;
+                                                  "
+                                                >
+                                                  The Global Justice, Love & Peace Summit
+                                                  Team
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                                <br /><br />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <table
+                                  width="100%"
+                                  border="0"
+                                  cellspacing="0"
+                                  cellpadding="0"
+                                  style="
+                                    border-top: 1px solid #fff;
+                                    border-bottom: 1px solid #fff;
+                                  "
+                                >
+                                  <tbody>
+                                    <tr>
+                                      <td>
+                                        <table width="100%">
+                                          <tbody>
+                                            <tr>
+                                              <td align="center">
+                                                <p
+                                                  style="
+                                                    font-size: 10px;
+                                                    font-weight: 400;
+                                                    line-height: 18px;
+                                                    text-align: center;
+                                                    text-underline-position: from-font;
+                                                    text-decoration-skip-ink: none;
+                                                  "
+                                                >
+                                                  For any assistance or support, please
+                                                  reach out to us at
+                                                  <a
+                                                    style="color: #0573ba"
+                                                    href="mailto:help@justice-love-peace.com"
+                                                    >help@justice-love-peace.com</a
+                                                  >
+                                                  <br />
+                                                  Explore more on our website:
+                                                  <a
+                                                    style="color: #0573ba"
+                                                    href="https://www.justice-love-peace.com"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    >www.justice-love-peace.com</a
+                                                  >
+                                                </p>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td align="center">
+                                        <table width="100%" style="padding: 1rem 12rem">
+                                          <tbody>
+                                            <tr>
+                                              <td align="center">
+                                                <a
+                                                  href="https://www.instagram.com/globaljusticelovepeacesummit/
+                                                          "
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/insta.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                  href="https://www.facebook.com/GlobalJusticeLoveandPeaceSummit
+                                      "
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/fb.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                  href="https://www.youtube.com/@GlobalJusticeLovePeaceSummit/videos"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/youtube.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                  href="https://wa.me/+91 9324064978"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/whatsApp.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                              <td align="center">
+                                                <a
+                                                  href="https://www.linkedin.com/company/global-justice-love-peace-summit-2025/posts/?feedView=all"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  ><img
+                                                    src="https://devglobaljusticeapis.cylsys.com/middle_ware/photo/linkedIn.svg"
+                                                    alt=""
+                                                /></a>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td align="center">
+                                <table>
+                                  <tbody>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        © 2025 Global Justice, Love & Peace Summit. All
+                                        rights reserved.
+                                        <br />
+                                        <br />
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        You are receiving this message because you
+                                        registered to join the movement for Global Justice,
+                                        Love & <br />
+                                        Peace. By signing up, you agreed to our Terms of Use
+                                        and Privacy Policies.
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 10px;
+                                          font-weight: 400;
+                                          line-height: 12.88px;
+                                          text-align: center;
+                                          text-underline-position: from-font;
+                                          text-decoration-skip-ink: none;
+                                        "
+                                      >
+                                        <ul
+                                          style="
+                                            display: flex;
+                                            padding: 0;
+                                            justify-content: space-between;
+                                          "
+                                        >
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/accessibility"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Accessibility</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/privacy-policy"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Privacy policy</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/cookie-policy"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Cookie Policy</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/terms-of-use"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Terms of use</a
+                                            >
+                                          </li>
+                                          <li>
+                                            <a
+                                              style="color: #333333"
+                                              href="https://www.justice-love-peace.com/visitor-terms-conditions"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              >Visitor Terms and Conditions</a
+                                            >
+                                          </li>
+                                        </ul>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </body>
+            </html>`
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail', // or use any other email provider
+        auth: {
+          user: 'Peacekeeper@global-jlp-summit.com', // your email address
+          pass: 'tusi xeoi hxoz fwwb'   // your email password
+        }
+      });
+
+      // const mailOptions = {
+      //     from: 'your-email@gmail.com',
+      //     to: email_id,
+      //     subject: 'Delegate Profile Registration Successful',
+      //     html: `
+      //         <div>
+      //             <p>Dear ${first_name} ${last_name},</p>
+      //             <p>Thank you for your interest in attending the Global Justice Love & Peace Summit on Sunday, 12th-13th April, 2025 at Dubai.</p>
+      //             <p>You will receive an email response within the next 28 hours.</p>
+      //             <br>
+      //             <p>Keep Smiling!</p>
+      //             <br>
+      //             <p>If you have any questions, feel free to reach out to us at <a href="mailto:help@justice-love-peace.com">help@justice-love-peace.com</a></p>
+      //         </div>
+      //     `
+      // };
+
+       const mailOptions = {
+        from: 'Peacekeeper@global-jlp-summit.com',
+        to: email_id,
+        subject: 'Delegate at the Global Justice Summit - It’s just one step away',
+        html: is_nomination === "1" ? with_full : (reference_no.length === 0 ? with_full : with_discount),
+      };
+
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Error sending email:', error);
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      });
+
+      return res.status(201).json({
+        success: true,
+        error: false,
+        url: session.url,
+        delegate_id: response.id,
+        message: "Delegate profile registered successfully.You are now being redirected to the payment gateway."
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Unknown error occurred."
+      });
+    }
+  });
+};
+
+function logError(error) {
+
+  const errorMessage = `[${new Date().toISOString()}] ${error.stack || error}\n`;
+  const logFilePath = path.join(__dirname, 'error.log');
+  console.log("logFilePath", logFilePath);
+  // Append error message to file
+  fs.appendFile(logFilePath, errorMessage, (err) => {
+
+    if (err) {
+
+      console.error('Failed to write to log file:', err);
+
+    }
+
+  });
+
+}
+
+const createDelegateProfile_whatapp = (req, res) => {
   const {
     title,
     first_name,
@@ -57,11 +1390,9 @@ const createDelegateProfile = (req, res) => {
     "mobile_number",
     "email_id",
     "dob",
-    "profession_1",
     "country",
-    "city",
-    "attendee_purpose",
-    "conference_lever_interest"
+    "state",
+    "city"
   ];
 
   const errors = [];
@@ -71,6 +1402,8 @@ const createDelegateProfile = (req, res) => {
       errors.push(`${field} is required`);
     }
   });
+
+
 
   // Validate specific fields
   if (req.body.mobile_number && !/^\d+$/.test(req.body.mobile_number)) {
@@ -89,6 +1422,24 @@ const createDelegateProfile = (req, res) => {
       }
     }
   }
+  if (req.body.dob) {
+    const dob = new Date(req.body.dob);
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    console.log(age,"age");
+    // Adjust age calculation if the birthday hasn't occurred yet this year
+    // const monthDiff = today.getMonth() - dob.getMonth();
+    // console.log(monthDiff,"monthDiff");
+    // const dayDiff = today.getDate() - dob.getDate();
+    // console.log(dayDiff,"dayDiff");
+    // if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    //     age--;
+    // }
+
+    if (age < 18) {
+        errors.push("User must be at least 18 years old");
+    }
+}
 
   // If there are validation errors, return response
   if (errors.length > 0) {
@@ -169,7 +1520,7 @@ const createDelegateProfile = (req, res) => {
       });
     }
     else if (response.response === "success") {
-      console.log(response, "vvvvvv");
+      console.log(response,"vvvvvv");
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         customer_email: email_id, // Ensure `email` is a valid string
@@ -1264,7 +2615,8 @@ const createDelegateProfile = (req, res) => {
 
       const mailOptions = {
         from: 'Peacekeeper@global-jlp-summit.com',
-        to: email_id,  
+        to: email_id,  // Adjust recipient
+        // to: "udayshimpi2000@gmail.com",
         subject: 'Delegate at the Global Justice Summit.- It`s just one step away',
         html: reference_no.length == 0 ? with_full : with_discount,
 
@@ -1283,7 +2635,7 @@ const createDelegateProfile = (req, res) => {
         success: true,
         error: false,
         url: session.url,
-        delegate_id: response.id,
+        delegate_id:response.id,
         message: "Delegate profile registered successfully.You are now being redirected to the payment gateway."
       });
     } else {
@@ -1296,89 +2648,6 @@ const createDelegateProfile = (req, res) => {
   });
 };
 
-const createNominateProfile = async (req, res) => {
-  try {
-    const {
-      delegate_id,
-      nomination_name,
-      relation_id,
-      dob,
-      email,
-      mobile_no,
-      institution
-    } = req.body;
-
-    // Validate required fields
-    const errors = [];
-    if (!delegate_id) errors.push("delegate_id is required");
-    if (!nomination_name) errors.push("nomination_name is required");
-    if (!relation_id) errors.push("relation_id is required");
-    if (!dob) errors.push("dob is required");
-    if (!email) errors.push("email is required");
-    if (!mobile_no) errors.push("mobile_no is required");
-    // Validate DOB format
-    if (dob) {
-      const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dobRegex.test(dob)) {
-        errors.push("dob should be in the format YYYY-MM-DD");
-      } else {
-        const dobDate = new Date(dob);
-        const today = new Date();
-        if (dobDate >= today) {
-          errors.push("dob should be a past date");
-        }
-      }
-    }
-
-    if (req.body.mobile_no && !/^\d+$/.test(req.body.mobile_no)) {
-      errors.push("mobile_number should be a valid number");
-    }
-    // If errors exist, return the response
-    if (errors.length > 0) {
-      return res.status(400).json({ success: false, error: true, errors: errors[0] });
-    }
-    console.log(req.body, "body");
-    const result = await delegateProfileModel.insert_nomination(req, res);
-    console.log(result[0].status, "result0");
-    if (result[0].status == 1) {
-      const result = await delegateProfileModel.insert_nomination(req, res);
-    }
-
-
-    return res.status(201).json({
-      success: true,
-      error: false,
-      message: result[0].result,
-    });
-
-  } catch (err) {
-    console.error("Error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: err.message,
-    });
-  }
-};
-
-
-function logError(error) {
-
-  const errorMessage = `[${new Date().toISOString()}] ${error.stack || error}\n`;
-  const logFilePath = path.join(__dirname, 'error.log');
-  console.log("logFilePath", logFilePath);
-  // Append error message to file
-  fs.appendFile(logFilePath, errorMessage, (err) => {
-
-    if (err) {
-
-      console.error('Failed to write to log file:', err);
-
-    }
-
-  });
-
-}
 const verify_session_status = async (req, res) => {
   try {
     const sessionId = req.body.sessionId;
@@ -2689,8 +3958,8 @@ const verify_session_status = async (req, res) => {
       }
         const mailOptions = {
           from: 'Peacekeeper@global-jlp-summit.com',
-          //to: `${session.customer_email}`,
-          to: "udayshimpi2000@gmail.com",
+          to: `${session.customer_email}`,
+          //to: "udayshimpi2000@gmail.com",
           subject: 'Payment Confirmation',
           html: bodyContent,
           attachments: [
@@ -2722,8 +3991,150 @@ const verify_session_status = async (req, res) => {
 
 
 };
+
+const createNominateProfile = async (req, res) => {
+  try {
+    const {
+      delegate_id,
+      nomination_name,
+      relation_id,
+      dob,
+      email,
+      mobile_no,
+      institution
+    } = req.body;
+
+    // Validate required fields
+    const errors = [];
+    if (!delegate_id) errors.push("delegate_id is required");
+    if (!nomination_name) errors.push("nomination_name is required");
+    if (!relation_id) errors.push("relation_id is required");
+    if (!dob) errors.push("dob is required");
+    if (!email) errors.push("email is required");
+    if (!mobile_no) errors.push("mobile_no is required");
+    // Validate DOB format
+    if (dob) {
+      const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dobRegex.test(dob)) {
+        errors.push("dob should be in the format YYYY-MM-DD");
+      } else {
+        const dobDate = new Date(dob);
+        const today = new Date();
+        if (dobDate >= today) {
+          errors.push("dob should be a past date");
+        }
+      }
+    }
+
+    if (req.body.mobile_no && !/^\d+$/.test(req.body.mobile_no)) {
+      errors.push("mobile_number should be a valid number");
+    }
+    if (errors.length > 0) {
+      return res.status(400).json({ success: false, error: true, errors: errors[0] });
+    }
+    const result = await delegateProfileModel.insert_nomination(req, res);
+    return res.status(201).json({
+      success: true,
+      error: false,
+      message: result[0].result,
+    });
+
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
+  }
+};
+
+const download_badge =async(req,res) =>{
+  try{
+        
+    if(req.params.email.length ==0)
+    {
+    res.status(500).json({
+      success:false,
+      error:true,
+      message:"email_id is required"
+    })
+    }
+    else
+    {
+      const login_peacekeeper= await delegateProfileModel.download_badge(req,res);
+      console.log("check",login_peacekeeper);
+     
+     if(login_peacekeeper[0][0].result ==="No details Found")
+      {
+        res.status(500).json({
+          success:false,
+          error:true,
+          message:login_peacekeeper[0][0].result
+        })
+      }
+      else
+      { 
+        if (!login_peacekeeper || login_peacekeeper.length === 0 || !login_peacekeeper[0][0]?.coupon_code) 
+        {
+          return res.status(404).json({
+              success: false,
+              error: true,
+              message: " Details not found"
+          });
+        }
+      
+      
+      const destFolder = path.join(__dirname, "../uploads/batch_photo");
+      const outputFilePath = path.join(destFolder, `${login_peacekeeper[0][0]?.coupon_code}.png`);
+     if (!fs.existsSync(destFolder)) 
+      {
+        fs.mkdirSync(destFolder, { recursive: true });
+      }
+      const protocol="https"; 
+      return res.status(200).json({
+        success:true,
+        error:false,
+        badge_photo_url:`${protocol}://${req.get("host")}/uploads/batch/photo/${login_peacekeeper[0][0]?.coupon_code}.png`
+        //badge_pdf_url:`${protocol}://${req.get("host")}/uploads/batch_pdf/${login_peacekeeper[0][0]?.coupon_code}.pdf`
+      })
+      
+      // return res.download(outputFilePath, `${file_name}.png`, (err) => {
+      //     if (err) {
+      //         console.error("File Download Error:", err);
+      //         return res.status(500).json({
+      //             success: false,
+      //             error: true,
+      //             message: "Error downloading file"
+      //         });
+      //     }
+      //     else
+      //     {
+      //       const protocol="https"; 
+      //       res.status(200).json({
+      //         success:true,
+      //         error:false,
+      //         url:`${protocol}://${req.get("host")}/uploads/batch/photo/${login_peacekeeper[0][0]?.coupon_code}.png`
+      //       })
+      //     }
+      // });
+      }
+      
+    }
+}
+catch(error)
+{
+  res.status(500).json({
+    success:false,
+    error:true,
+    message:error.message
+  })
+}
+};
 module.exports = {
-  createDelegateProfile,
-  createNominateProfile,
-  verify_session_status
+    createDelegateProfile,
+    verify_session_status,
+    download_badge,
+    createNominateProfile,
+    createDelegateProfile_whatapp
 };

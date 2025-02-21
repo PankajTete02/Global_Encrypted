@@ -94,43 +94,20 @@ Delegatedetails.create = function (details, result) {
   );
 };
 //-------------------------------------Delegate Form -------------------------------------------------------------
-Delegatedetails.findById = function (req, res, auth, result) {
-  const { page_no, page_size, name, email, sort_column, sort_order } = req.body;
-
-  if (!page_no || !page_size || page_no <= 0 || page_size <= 0) {
-    return res.status(400).json({
-      status: false,
-      error: true,
-      message: "Invalid page number or size.",
-    });
-  } else {
-    console.log("Page Number:", page_no, "Page Size:", page_size, "Admin id:", auth.user_id);
-
-    // Ensure default values for sorting if not provided
-    const sortColumn = sort_column || 'created_date'; // Default sort column
-    const sortOrder = sort_order || 'ASC'; // Default sort order
-
-    dbConn.query(
-      "CALL microsite_get_nonregistered_delegate(?, ?, ?, ?, ?, ?, ?);",
-      [page_no, page_size, auth.user_id, name, email, sortColumn, sortOrder],
-      function (err, res) {
-        if (err) {
-          console.error("Database Error:", err);
-          result(err, null);
-        } else {
-          console.log("Query Result:", res);
-          if (res && res[0]) {
-            result(null, res[0]); // Return only the data rows
-          } else {
-            result(null, []);
-          }
-        }
+Delegatedetails.findById = function (id, result) {
+  console.log("lllllllllllllllllll", id);
+  dbConn.query(
+    "call microsite_get_nonregistered_delegate();      ",
+    id,
+    function (err, res) {
+      if (err) {
+        result(null, err);
+      } else {
+        result(null, res);
       }
-    );
-  }
+    }
+  );
 };
-
-
 // ====================GetAll--Approve--Delegate======
 Delegatedetails.findByApproved = function (
   authId,
@@ -167,8 +144,6 @@ Delegatedetails.findByApproved = function (
     }
   );
 };
-
-
 //-------------------------------------------Partner Form --------------------------------------------------------------------------
 
 Delegatedetails.findByPartner = function (id, result) {
