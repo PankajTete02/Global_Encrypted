@@ -13,6 +13,8 @@ const wspMsg = require("./middlewares/whatsapp");
 const SAVEQR = require('././src/middleware/qr_code');
 
 // const file1 = require('./src/middleware/i-card3.html');
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require('swagger-ui-express');
 
 const fs = require('fs');
 // const routes = require('./Route/register_routes');
@@ -49,6 +51,55 @@ app.use(bodyParser.json())
 // });
 // app.use(routes);
 // listen for requests
+
+
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: "Global Justice API",
+      version: "1.0.0",
+      description: `API documentation for Global Justice Project.`
+    },
+    servers: [
+      {
+        url: 'http://localhost:4000',
+        description: 'Development server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
+    }
+  },
+  apis: [
+    "src/routes/peacekeeperRoutes.js",
+    "src/routes/authenticate_route.js",
+    "src/routes/delegateProfileRoute.js",
+    "src/routes/delegate_registration.js",
+    "src/routes/brochure.js",
+    "src/routes/chart.js",
+    "src/routes/contactUsRoutes.js",
+    "src/routes/country-state-city.routes.js",
+    // "src/routes/Router.js"
+
+    
+    
+    
+    // path to your route files
+  ],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Update your swagger UI setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -734,6 +785,8 @@ const linkToEncodeForBroucher = 'https://apis.pharmapreconnectcongress.com/src/u
 SAVEQR.generateQRCodeAndSaveforDownloadBroucher(linkToEncodeForBroucher);
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
+  console.log(`Swagger docs available at http://localhost:${port}/api-docs`);
+
 });
 
 

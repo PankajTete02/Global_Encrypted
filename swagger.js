@@ -18,8 +18,8 @@ const ENDPOINTS_FILES = [
   path.join(__dirname, "src/routes/brochure.js"),
   path.join(__dirname, "src/routes/chart.js"),
   path.join(__dirname, "src/routes/contactUsRoutes.js"),
-  path.join(__dirname, "src/routes/country-state-city.routes.js")
-
+  path.join(__dirname, "src/routes/country-state-city.routes.js"),
+  // path.join(__dirname, "src/routes/Router.js")
 
 ];
 
@@ -27,7 +27,7 @@ const ENDPOINTS_FILES = [
 const doc = {
   info: {
     title: "Global Justice API",
-    version: "1.0.0",
+    version: "1.0.0", 
     description: "API documentation for Global Justice Project"
   },
   host: HOST,
@@ -56,6 +56,7 @@ const doc = {
       in: 'header'
     }
   }
+  
 };
 
 // Validate that endpoint files exist
