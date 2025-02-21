@@ -213,8 +213,8 @@ const createDelegateProfile = (req, res) => {
             customer_email: email_id,
             line_items: is_nomination === "1" ? nomination : delegate,
             mode: 'payment',
-            success_url: `https://globaljusticeuat.cylsys.com/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `https://globaljusticeuat.cylsys.com/`,
+            success_url: `https://www.justice-love-peace.com/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `https://www.justice-love-peace.com/`,
             expires_at: Math.floor(Date.now() / 1000) + 86400,
           });
         
@@ -1278,8 +1278,6 @@ const createDelegateProfile = (req, res) => {
         subject: 'Delegate at the Global Justice Summit - It’s just one step away',
         html: is_nomination === "1" ? with_full : (reference_no.length === 0 ? with_full : with_discount),
       };
-
-    
 
       // Send the email
       transporter.sendMail(mailOptions, (error, info) => {
