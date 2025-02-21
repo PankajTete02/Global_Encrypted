@@ -112,7 +112,7 @@ app.use("/api/v1", invitationRoute);
 app.use("/api/v1", loginRoute);
 app.use('/api/v1/sponsorships', require('./src/routes/sponsorshipRoutes'));
 app.use('/api/v1/collaborators', require('./src/routes/collaboratorRoutes'));
-
+app.use('/api/v1', require('./src/routes/delegate_profile_adv_route'));
 // Use the peacekeeper routes
 app.use('/api/v1', peacekeeperRoutes);
 app.use("/api/v1", Router);

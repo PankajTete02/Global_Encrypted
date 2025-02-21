@@ -1,6 +1,7 @@
 const pool = require('../../db.config');
 
 const insertDelegateProfile = (req, delegateData, callback) => {
+    console.log(delegateData,"delegateData");
     const {
         title,
         first_name,
@@ -30,22 +31,25 @@ const insertDelegateProfile = (req, delegateData, callback) => {
         reference_no,
         country_id,
         state_id,
-        city_id
+        city_id,
+        is_nomination,
+        p_type,
+        p_reference_by
     } = delegateData;
 
     console.log("delgate",delegateData);
+    // console.log("nnnnnnn",delegateData.is_nomination);
 
     const conference_lever_interest1 = JSON.stringify(req.body.conference_lever_interest);
     const sql = `
-        CALL SP_INSERT_DELEGATE_PROFILE(
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?
-        )`;
+        CALL SP_INSERT_DELEGATE_PROFILE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`;
 
     const values = [
         title, first_name, last_name, country_code, mobile_number, email_id,
         linkedIn_profile, instagram_profile, dob, profession_1, profession_2, website,
         organization_name, address, country, state, city, pin_code, attend_summit,
-        attendee_purpose, conference_lever_interest1, created_by, status, passport_no, passport_issue_by, reference_no, country_id,state_id, city_id
+        attendee_purpose, conference_lever_interest1, created_by, status, passport_no, passport_issue_by, reference_no, country_id,state_id, city_id,
+        is_nomination,p_type,p_reference_by
     ];
 
     pool.query(sql, values, (err, results) => {
@@ -53,10 +57,8 @@ const insertDelegateProfile = (req, delegateData, callback) => {
             return callback(err, null);
         }
 
-        
         const response = results[0][0]; 
 
-        // Handling based on stored procedure response
         if (response.response === "fail") {
             return callback(null, { response: "fail" });
         }

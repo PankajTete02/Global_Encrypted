@@ -46,7 +46,10 @@ const createDelegateProfile = (req, res) => {
     reference_no,
     country_id,
     state_id,
-    city_id
+    city_id,
+    is_nomination,
+    p_type,
+    p_reference_by
   } = req.body;
 
   const requiredFields = [
@@ -61,7 +64,9 @@ const createDelegateProfile = (req, res) => {
     "country",
     "city",
     "attendee_purpose",
-    "conference_lever_interest"
+    "conference_lever_interest",
+    "is_nomination",
+    "p_type"
   ];
 
   const errors = [];
@@ -131,7 +136,10 @@ const createDelegateProfile = (req, res) => {
     reference_no,
     country_id,
     state_id,
-    city_id
+    city_id,
+    is_nomination,
+    p_type,
+    p_reference_by
   };
 
   // Call model function to insert the delegate profile
@@ -151,7 +159,7 @@ const createDelegateProfile = (req, res) => {
       return res.status(400).json({
         success: false,
         error: true,
-        message: "Email ID already registered."
+        message: "Email already registered as delegate."
       });
     }
     else if (response.response === "fail1") {
@@ -169,30 +177,47 @@ const createDelegateProfile = (req, res) => {
       });
     }
     else if (response.response === "success") {
-      console.log(response, "vvvvvv");
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        customer_email: email_id, // Ensure `email` is a valid string
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd', // Specify the currency
-              product_data: {
-                name: reference_no.length === 0 ? 'Without coupon' : 'With coupon', // Dynamic product name based on `product.length`
+      console.log(response,"cjeedvfdv");
+      console.log(is_nomination,"response.nomination");
+       
+          console.log(email_id,"email_id_check");
+          const nomination = [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: 'Without coupon',
+                },
+                unit_amount: 280000,
               },
-              unit_amount: reference_no.length === 0 ? 280000 : 260400, // Amount in cents (e.g., $2800.00 or $2604.00)
+              quantity: 1,
             },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        // success_url: `https://www.justice-love-peace.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
-        // cancel_url: `https://www.justice-love-peace.com/cancel`, // Redirect on cancellation
-        success_url: `https://globaljusticeuat.cylsys.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
-        cancel_url: `https://globaljusticeuat.cylsys.com/`,
-        expires_at: Math.floor(Date.now() / 1000) + 86400, // Set expiry time to 24 hours from now
-      });
-      console.log("sess", session);
+          ];
+        
+          const delegate = [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: reference_no.length === 0 ? 'Without coupon' : 'With coupon',
+                },
+                unit_amount: reference_no.length === 0 ? 280000 : 260400,
+              },
+              quantity: 1,
+            },
+          ];
+       
+         
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer_email: email_id,
+            line_items: is_nomination === "1" ? nomination : delegate,
+            mode: 'payment',
+            success_url: `https://globaljusticeuat.cylsys.com/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `https://globaljusticeuat.cylsys.com/`,
+            expires_at: Math.floor(Date.now() / 1000) + 86400,
+          });
+        
       // const discount_url=`https://globaljusticeuat.cylsys.com/payment-status/?email=${email_id}`;
       const discount_url = `${session.url}`
       const with_discount = `<!DOCTYPE html>
@@ -1245,30 +1270,16 @@ const createDelegateProfile = (req, res) => {
         }
       });
 
-      // const mailOptions = {
-      //     from: 'your-email@gmail.com',
-      //     to: email_id,
-      //     subject: 'Delegate Profile Registration Successful',
-      //     html: `
-      //         <div>
-      //             <p>Dear ${first_name} ${last_name},</p>
-      //             <p>Thank you for your interest in attending the Global Justice Love & Peace Summit on Sunday, 12th-13th April, 2025 at Dubai.</p>
-      //             <p>You will receive an email response within the next 28 hours.</p>
-      //             <br>
-      //             <p>Keep Smiling!</p>
-      //             <br>
-      //             <p>If you have any questions, feel free to reach out to us at <a href="mailto:help@justice-love-peace.com">help@justice-love-peace.com</a></p>
-      //         </div>
-      //     `
-      // };
+     
 
       const mailOptions = {
         from: 'Peacekeeper@global-jlp-summit.com',
-        to: email_id,  
-        subject: 'Delegate at the Global Justice Summit.- It`s just one step away',
-        html: reference_no.length == 0 ? with_full : with_discount,
-
+        to: email_id,
+        subject: 'Delegate at the Global Justice Summit - It’s just one step away',
+        html: is_nomination === "1" ? with_full : (reference_no.length === 0 ? with_full : with_discount),
       };
+
+    
 
       // Send the email
       transporter.sendMail(mailOptions, (error, info) => {
@@ -1278,6 +1289,7 @@ const createDelegateProfile = (req, res) => {
           console.log('Email sent: ' + info.response);
         }
       });
+
 
       return res.status(201).json({
         success: true,
@@ -1333,23 +1345,27 @@ const createNominateProfile = async (req, res) => {
     if (req.body.mobile_no && !/^\d+$/.test(req.body.mobile_no)) {
       errors.push("mobile_number should be a valid number");
     }
-    // If errors exist, return the response
     if (errors.length > 0) {
       return res.status(400).json({ success: false, error: true, errors: errors[0] });
     }
-    console.log(req.body, "body");
     const result = await delegateProfileModel.insert_nomination(req, res);
-    console.log(result[0].status, "result0");
-    if (result[0].status == 1) {
-      const result = await delegateProfileModel.insert_nomination(req, res);
+    if(result[0].status == 0)
+    {
+      return res.status(500).json({
+        success: false,
+        error: true,
+        message: result[0].result,
+      });
     }
-
-
-    return res.status(201).json({
-      success: true,
-      error: false,
-      message: result[0].result,
-    });
+    else
+    {
+      return res.status(200).json({
+        success: true,
+        error: false,
+        message: result[0].result,
+      });
+    }
+    
 
   } catch (err) {
     console.error("Error:", err);
@@ -1417,6 +1433,12 @@ const verify_session_status = async (req, res) => {
                     .resize(qrDimensions.width, qrDimensions.height)
                     .composite([{ input: logoBuffer, gravity: 'center', blend: 'over' }])
                     .toFile(imagePath);
+
+
+
+
+
+
                 } catch (error) {
                   console.error("Error generating QR code:", error);
                 }
@@ -2689,8 +2711,8 @@ const verify_session_status = async (req, res) => {
       }
         const mailOptions = {
           from: 'Peacekeeper@global-jlp-summit.com',
-          //to: `${session.customer_email}`,
-          to: "udayshimpi2000@gmail.com",
+          to: `${session.customer_email}`,
+          //to: "udayshimpi2000@gmail.com",
           subject: 'Payment Confirmation',
           html: bodyContent,
           attachments: [
@@ -2722,6 +2744,9 @@ const verify_session_status = async (req, res) => {
 
 
 };
+
+
+
 module.exports = {
   createDelegateProfile,
   createNominateProfile,

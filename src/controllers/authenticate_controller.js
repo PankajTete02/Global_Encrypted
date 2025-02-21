@@ -833,7 +833,8 @@ const authenticate_controller={
     try
     {
       const imagePath = path.join(__dirname, `../uploads/delegate_qr/check.png`);
-      const main_url="https://globaljusticeuat.cylsys.com/delegate-registration?code=COININ-0000001-W";
+      const main_url="https://globaljusticeuatadmin.cylsys.com/dashboard/registered-user";
+      console.log(main_url,"main_url");
       const tiny_url=await shortenURL(main_url);
       console.log(tiny_url,"tiny_url");
       async function generateQRCodeWithImage(imagePath, qr_url) {
