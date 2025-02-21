@@ -41,8 +41,13 @@
     "sharp": "^0.33.5",
     "shortid": "^2.2.16",
     "stripe": "^17.5.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
     "twilio": "^4.17.0",
     "wbm": "^1.1.16",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "swagger-autogen": "^2.23.7"
   }
 }
