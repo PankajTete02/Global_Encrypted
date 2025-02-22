@@ -46,7 +46,9 @@ const createDelegateProfile = (req, res) => {
     country_id,
     state_id,
     city_id,
-    is_nomination
+    is_nomination,
+    p_type,
+    p_reference_by
   } = req.body;
 
   const requiredFields = [
@@ -62,7 +64,8 @@ const createDelegateProfile = (req, res) => {
     "city",
     "attendee_purpose",
     "conference_lever_interest",
-    "is_nomination"
+    "is_nomination",
+    "p_type"
   ];
 
   const errors = [];
@@ -133,7 +136,9 @@ const createDelegateProfile = (req, res) => {
     country_id,
     state_id,
     city_id,
-    is_nomination
+    is_nomination,
+    p_type,
+    p_reference_by
   };
 
   // Call model function to insert the delegate profile
@@ -202,18 +207,6 @@ const createDelegateProfile = (req, res) => {
           ];
        
          
-          // const session = await stripe.checkout.sessions.create({
-          //   payment_method_types: ['card'],
-          //   customer_email: email_id, 
-          //   line_items: is_nomination === 1 ? line_items1 : line_items2,
-          //   mode: 'payment',
-          //   // success_url: `https://www.justice-love-peace.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
-          //   // cancel_url: `https://www.justice-love-peace.com/cancel`, // Redirect on cancellation
-          //   success_url: `https://globaljusticeuat.cylsys.com/success?session_id={CHECKOUT_SESSION_ID}`, // Redirect on success
-          //   cancel_url: `https://globaljusticeuat.cylsys.com/`,
-          //   expires_at: Math.floor(Date.now() / 1000) + 86400, // Set expiry time to 24 hours from now
-          // });
-         
           const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             customer_email: email_id,
@@ -224,11 +217,6 @@ const createDelegateProfile = (req, res) => {
             expires_at: Math.floor(Date.now() / 1000) + 86400,
           });
         
-         
-     
-     
-      
-      console.log("sess", session);
       // const discount_url=`https://globaljusticeuat.cylsys.com/payment-status/?email=${email_id}`;
       const discount_url = `${session.url}`
       const with_discount = `<!DOCTYPE html>
@@ -1281,24 +1269,9 @@ const createDelegateProfile = (req, res) => {
         }
       });
 
-      // const mailOptions = {
-      //     from: 'your-email@gmail.com',
-      //     to: email_id,
-      //     subject: 'Delegate Profile Registration Successful',
-      //     html: `
-      //         <div>
-      //             <p>Dear ${first_name} ${last_name},</p>
-      //             <p>Thank you for your interest in attending the Global Justice Love & Peace Summit on Sunday, 12th-13th April, 2025 at Dubai.</p>
-      //             <p>You will receive an email response within the next 28 hours.</p>
-      //             <br>
-      //             <p>Keep Smiling!</p>
-      //             <br>
-      //             <p>If you have any questions, feel free to reach out to us at <a href="mailto:help@justice-love-peace.com">help@justice-love-peace.com</a></p>
-      //         </div>
-      //     `
-      // };
+     
 
-       const mailOptions = {
+      const mailOptions = {
         from: 'Peacekeeper@global-jlp-summit.com',
         to: email_id,
         subject: 'Delegate at the Global Justice Summit - It’s just one step away',
@@ -1313,6 +1286,7 @@ const createDelegateProfile = (req, res) => {
           console.log('Email sent: ' + info.response);
         }
       });
+
 
       return res.status(201).json({
         success: true,
@@ -4033,11 +4007,23 @@ const createNominateProfile = async (req, res) => {
       return res.status(400).json({ success: false, error: true, errors: errors[0] });
     }
     const result = await delegateProfileModel.insert_nomination(req, res);
-    return res.status(201).json({
-      success: true,
-      error: false,
-      message: result[0].result,
-    });
+    if(result[0].status == 0)
+    {
+      return res.status(500).json({
+        success: false,
+        error: true,
+        message: result[0].result,
+      });
+    }
+    else
+    {
+      return res.status(200).json({
+        success: true,
+        error: false,
+        message: result[0].result,
+      });
+    }
+    
 
   } catch (err) {
     console.error("Error:", err);
