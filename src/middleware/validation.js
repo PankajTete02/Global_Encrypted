@@ -1,19 +1,24 @@
 const Joi = require("joi");
 
-const namePattern = /^[a-zA-Z0-9 ]{1,50}$/;
+const namePattern = /^[a-zA-Z0-9 -]{1,50}$/;
 const mobilePattern = /^\+?[1-9]\d{9,14}$/;
 const addressPattern = /^[a-zA-Z0-9\s,.'\-/#]{1,100}$/;
 const emailPattern = /^[A-Za-z0-9]+([._%+-]*[A-Za-z0-9]+)*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 const sponsorshipSchema = Joi.object({
-  sponsorship_type: Joi.string()
+  sponsorship_type_id: Joi.string()
     .trim()
-    .valid("patron", "partner")
     .required()
     .messages({
-      "any.required": "Sponsorship type is required.",
-      "any.only": "Sponsorship type must be either 'patron' or 'partner'.",
+      "any.required": "Sponsorship type id is required."
     }),
+
+  sponsorship_type: Joi.string()
+  .trim()
+  .required()
+  .messages({
+    "any.required": "Sponsorship type is required."
+  }),
 
   sponsorship_name: Joi.string()
     .trim()
@@ -36,61 +41,46 @@ const sponsorshipSchema = Joi.object({
   poc_mobile: Joi.string()
     .trim()
     .pattern(mobilePattern)
-    .required()
+    .allow("", null)
+    .optional()
     .messages({
-      "any.required": "POC mobile number is required.",
       "string.pattern.base": "Invalid mobile number format.",
     }),
 
   poc_email: Joi.string()
     .trim()
     .pattern(emailPattern)
-    .required()
+    .allow("", null)
+    .optional()
     .messages({
-      "any.required": "POC email is required.",
       "string.pattern.base": "Invalid email format.",
     }),
 
-  country_id: Joi.number()
-    .required()
-    .messages({ "any.required": "Country ID is required." }),
+  country_id: Joi.number().min(0).allow("", null).optional(),
 
-  country: Joi.string()
-    .trim()
-    .required()
-    .messages({ "any.required": "Country name is required." }),
+  country: Joi.string().trim().allow("", null).optional(),
 
-  state_id: Joi.number()
-    .required()
-    .messages({ "any.required": "State ID is required." }),
+  state_id: Joi.number().min(0).allow("", null).optional(),
 
-  state: Joi.string()
-    .trim()
-    .required()
-    .messages({ "any.required": "State name is required." }),
+  state: Joi.string().trim().allow("", null).optional(),
 
-  city_id: Joi.number()
-    .required()
-    .messages({ "any.required": "City ID is required." }),
+  city_id: Joi.number().min(0).allow("", null).optional(),
 
-  city: Joi.string()
-    .trim()
-    .required()
-    .messages({ "any.required": "City name is required." }),
+  city: Joi.string().allow("", null).trim().optional(),
 
   address: Joi.string()
     .trim()
     .pattern(addressPattern)
-    .required()
+    .allow("", null)
+    .optional()
     .messages({
-      "any.required": "Address is required.",
       "string.pattern.base": "Address contains invalid characters or exceeds 100 characters.",
     }),
 
   ref_by: Joi.string()
     .trim()
     .valid("peacekeeper", "other")
-    .allow(null, "")
+    .allow("")
     .optional()
     .messages({
       "any.only": "Ref by must be either 'peacekeeper' or 'other'.",
@@ -98,7 +88,7 @@ const sponsorshipSchema = Joi.object({
 
   peacekeeper_other_name: Joi.string()
     .trim()
-    .allow(null, "")
+    .allow("")
     .optional(),
 
   peacekeeper_id: Joi.number()

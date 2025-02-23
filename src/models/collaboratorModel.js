@@ -25,7 +25,7 @@ const CollaboratorModel = {
 
   // Create a Collaborator
   create: async (data) => {
-    const sql = `CALL CreateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `CALL CreateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const [results] = await db.promise().query(sql, [
       data.full_name,
       data.dob,
@@ -34,6 +34,11 @@ const CollaboratorModel = {
       data.country_id,
       data.country,
       data.country_code,
+      data.state_id, 
+      data.state,
+      data.city_id, 
+      data.city, 
+      data.address,
       data.is_active,
       data.logo_image,
       data.domain_url,
@@ -45,7 +50,7 @@ const CollaboratorModel = {
 
   // Update a Collaborator
   update: async (id, data) => {
-    const sql = `CALL UpdateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `CALL UpdateCollaborator(?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?)`;
     const [results] = await db.promise().query(sql, [
       id,
       data.full_name,
@@ -54,6 +59,11 @@ const CollaboratorModel = {
       data.mobile_no,
       data.country_id,
       data.country,
+      data.state_id, 
+      data.state,
+      data.city_id, 
+      data.city, 
+      data.address,
       data.is_active,
       data.logo_image
     ]);

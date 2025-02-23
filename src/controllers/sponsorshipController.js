@@ -65,3 +65,13 @@ exports.deleteSponsorship = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getAllSponsorshipTypes = async (req, res) => {
+  try {
+    const types = await SponsorshipModel.getAllSponsorshipTypes();
+    res.json({ data: types });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

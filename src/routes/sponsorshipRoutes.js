@@ -10,5 +10,6 @@ router.get('/get/:id', sponsorshipController.getSponsorshipById);
 router.post('/add', validateSponsorship, sponsorshipController.createSponsorship);
 router.put('/edit/:id', validateSponsorship, sponsorshipController.updateSponsorship);
 router.delete('/delete/:id', sponsorshipController.deleteSponsorship);
+router.get('/sponsorship-types', sponsorshipController.getAllSponsorshipTypes);
 
 module.exports = router;

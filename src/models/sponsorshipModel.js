@@ -20,9 +20,9 @@ const SponsorshipModel = {
   },
 
   create: async (data) => {
-    const sql = `CALL CreateSponsorship(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `CALL CreateSponsorship(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     await db.promise().query(sql, [
-      data.sponsorship_type, data.sponsorship_name, data.poc_name, data.poc_mobile,
+      data.sponsorship_type_id, data.sponsorship_type, data.sponsorship_name, data.poc_name, data.poc_mobile,
       data.poc_email, data.country_id, data.country, data.state_id, data.state,
       data.city_id, data.city, data.address, data.ref_by, data.peacekeeper_id,
       data.peacekeeper_other_name, data.is_active
@@ -30,9 +30,9 @@ const SponsorshipModel = {
   },
 
   update: async (id, data) => {
-    const sql = `CALL UpdateSponsorship(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `CALL UpdateSponsorship(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     await db.promise().query(sql, [
-      id, data.sponsorship_type, data.sponsorship_name, data.poc_name,
+      id, data.sponsorship_type_id, data.sponsorship_type, data.sponsorship_name, data.poc_name,
       data.poc_mobile, data.poc_email, data.country_id, data.country, data.state_id,
       data.state, data.city_id, data.city, data.address, data.ref_by, data.peacekeeper_id,
       data.peacekeeper_other_name, data.is_active
@@ -42,6 +42,13 @@ const SponsorshipModel = {
   delete: async (id) => {
     const sql = `CALL DeleteSponsorship(?)`;
     await db.promise().query(sql, [id]);
+  },
+
+  getAllSponsorshipTypes: async () => {
+    const sql = `CALL GetAllSponsorshipTypes()`;
+    const [results] = await db.promise().query(sql);
+    // The stored procedure returns an array; use results[0] for the rows.
+    return results[0];
   },
 
   // Check if email exists using the stored procedure
