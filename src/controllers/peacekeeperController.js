@@ -92,7 +92,7 @@ const createPeacekeeper = (req, res) => {
     // Validate mobile number (only digits)
     if (mobile_number.trim() && !/^\+\d{1,6} \d+$/.test(mobile_number.trim())) {
       errors.push("Mobile number should start with a country code (e.g., +91), contain a space, followed by digits without spaces or special characters");
-  }
+    }
  
    
     // Validate DOB (YYYY-MM-DD format and a past date)
