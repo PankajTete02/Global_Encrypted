@@ -59,7 +59,7 @@ async function VerifyToken(req, res, next) {
 
 
 async function encrypt(jsonObject) {
-  console.log(jsonObject, "json");
+  // console.log(jsonObject, "json");
   console.log(process.env.ENCRYPTION_KEY, "process.env.ENCRYPTION_KEY");
   return CryptoJS.AES.encrypt(JSON.stringify(jsonObject), process.env.ENCRYPTION_KEY).toString();
 }

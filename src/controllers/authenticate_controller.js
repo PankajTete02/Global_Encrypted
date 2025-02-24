@@ -96,7 +96,8 @@ const authenticate_controller={
     }
 
     const loginResult = await authenicate_model.peacekeeper_login(req.body, req);
-
+    // console.log(loginResult,"loginResult");
+    
     if (!loginResult.success) {
       return res.status(400).json({ success: false, error: true, message: loginResult.message });
     }

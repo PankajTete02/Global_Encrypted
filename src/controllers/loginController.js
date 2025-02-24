@@ -82,7 +82,7 @@ async function otpSend(email, otp) {
 exports.sendOtp = async (req, res) => {
 	try {
 		const { email,deviceId, deviceOs,registeration_type } = req.body;
-		console.log(req.body,"req.body");
+		// console.log(req.body,"req.body");
 		if (!email || !deviceId || !deviceOs || !registeration_type) {
 			return res.status(400).json(
 				{
@@ -95,8 +95,8 @@ exports.sendOtp = async (req, res) => {
 		}
 		
 		const result = await otpModel.insertLoginUser(email,deviceId, deviceOs,registeration_type);
-		console.log(result[0],"check");
-		console.log(result.otp,"otp");
+		// console.log(result[0][0],"check");
+		// console.log(result.otp,"otp");
 
 		// Check if registeration_type = 0 and that email already registerd as peacekeeper 
 		if(result.result[0][0].status === 3){
@@ -212,7 +212,7 @@ exports.updatePassword = async (req, res) => {
 		
         // const parsedData = JSON.parse(decrypt_details);
 		const parsedData = req.body;
-		console.log(parsedData,"parsedData");
+		// console.log(parsedData,"parsedData");
 		const {email, password, confirmPassword} = parsedData;
         if (!email || !password || !confirmPassword) {
             return res.status(400).json({ success: false,error:true, message: 'All fields are required.' });
@@ -228,11 +228,11 @@ exports.updatePassword = async (req, res) => {
 		const encryptedPassword =await encrypt(password);
 		
         const result = await otpModel.generatePassword(email, encryptedPassword);
-		// console.log(result,"result");
+		// console.log(result[0].success,"result");
 	
-		if(result.success == 1){
+		if(result[0].success === 1){
 		return res.status(200).json({
-			message: result.message, 
+			message: result[0].message, 
 			status: 200,
 			success:true,
 			error:false
