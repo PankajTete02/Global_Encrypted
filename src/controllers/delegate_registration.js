@@ -6,9 +6,7 @@ const qr_code = require("../middleware/qrcode_urn_no")
 const notification = require("../../middlewares/email")
 const fs = require('fs');
 const path = require('path');
-const requestIp = require('request-ip');
 const { log, count } = require("console");
-const VerifyToken=require("../middleware/auth");
 exports.Delegatedetails = async function (req, res) {
   const new_details = new Delegatedetails(req.body);
   userEmail = req.body.email_id;
@@ -120,13 +118,7 @@ exports.findAll = function (req, res) {
 };
 // ------------------------------------Delegate Form ------------------------------------------------------------------
 exports.findById = function (req, res) {
-  const clientIp = requestIp.getClientIp(req);
-  console.log(clientIp,"clientIp");
-
-  const auth= VerifyToken(req,res);
   Delegatedetails.findById(
-    req,
-    res,
     function (err, Details) {
       if (err) {
         console.log(err);
@@ -150,28 +142,56 @@ exports.findById = function (req, res) {
 
 // ==============Approve-Delegate=========
 
-exports.findByApproved = function (req, res) {
-  const auth= VerifyToken(req,res);
-  Delegatedetails.findByApproved(req,res,
-    function (err, Details) {
-      if (err) {
-        console.log(err);
-        return res.status(400).json({
-          status: false,
-          error: true,
-          message: "Something went wrong. Please try again.",
-        });
-      }
-      else
-        // console.log("avbsbs", Details);
+exports.findByApproved = async function (req, res) {
+  try {
+    // Verify the token
+    const auth = await VerifyToken(req, res);
+    const authId = auth.user_id;
+
+    console.log("Authenticated User ID:", authId);
+
+    // Extract parameters from request body
+    const { page_no, page_size, search, sort_column, sort_order } = req.body;
+    console.log(req.body,"req.body");
+    
+    // Call the model function
+    Delegatedetails.findByApproved(
+      authId,
+      page_no,
+      page_size,
+      search,
+      sort_column,
+      sort_order,
+      function (err, data) {
+        if (err) {
+          console.error("Database Error:", err);
+          return res.status(400).json({
+            success: false,
+            error: true,
+            message: "Something went wrong. Please try again.",
+          });
+        }
+        // console.log(data,"data[0]");
+        // console.log(data[0][0],"data[0][1]");
+
+        console.log(data[1][0].total_records, "total_records");
         return res.json({
-          data: Details,
           success: true,
           error: false,
-          message: "Approve Delegate Details fetched successfully!",
+          message: "Approved Delegate Details fetched successfully!",
+          totalCount: data[1][0].total_records,  // Include total count
+          data: data[0]
         });
-    }
-  );
+      }
+    );
+  } catch (error) {
+    console.error("Error during token verification:", error);
+    return res.status(500).json({
+      success: false,
+      error: true,
+      message: "Internal Server Error. Please try again.",
+    });
+  }
 };
 
 
@@ -441,7 +461,6 @@ exports.update_status = function (req, res) {
             return res.status(500).json({ error: 'An error occurred' });
           }
           console.log("status", filepath, userNames, companys, designations, statusType, userEmails, urn_nos, qr_codes, userNumbers);
-          
           return res.json({
             message: 'Status Updated Successfully!',
             success: true,

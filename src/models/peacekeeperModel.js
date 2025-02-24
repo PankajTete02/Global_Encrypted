@@ -43,33 +43,56 @@ const getPeacekeeperData = (peacekeeperId) => {
   };
 
 
-  const getAllPeacekeepers = (callback) => {
-    const sql = `CALL USP_GetAllPeacekeeperData();`;  // Calling the stored procedure to get all peacekeeper data
-
-    db.query(sql, (err, results) => {
-        if (err) {
-            return callback(err, null);
+  const getAllPeacekeepers = (req, auth, callback) => {
+    console.log("Callback type:", typeof callback);
+    console.log( auth.user_id," auth.user_id,");
+    
+    const { page_no, page_size, search, sort_column, sort_order } = req.body;
+  
+    const sql = `CALL USP_GetAllPeacekeeperData(?,?,?,?,?,?);`;
+  
+    db.query(
+        sql,
+        [
+            page_no || 1,             // Default page_no to 1
+            page_size || 10,          // Default page_size to 10
+            auth.user_id,             // Admin ID
+            search  ,          // Global search input
+            sort_column , // Default sorting column
+            sort_order     // Default sorting order
+        ],
+        (err, results) => {
+            if (err) {
+                console.error("Database Error:", err);
+                return callback(err, null);
+            }
+            
+            console.log("Results:", results);
+  
+            const Data = results && results[0] ? results[0] : [];
+            const totalCount = results && results[1] && results[1][0] ? results[1][0].total_count : 0;
+  
+            let finalData = {
+                Data,
+                totalCount
+            };
+            return callback(null, finalData);
         }
-
-        // Return the fetched results from the procedure
-        return callback(null, results[0]); // Assuming the first result set contains the desired data
-    });
-};
+    );
+  };
 
 
-
-const getAllContactUs = (callback) => {
-  const sql = `CALL USP_GetAllContactUsData();`;  // Calling the stored procedure to get all peacekeeper data
-
-  db.query(sql, (err, results) => {
+  const getAllContactUs = (page_no, page_size, search, sort_column, sort_order, callback) => {
+    const sql = `CALL USP_GetAllContactUsData(?, ?, ?, ?, ?);`;  // Correct parameter count
+    
+    db.query(sql, [page_no, page_size, search, sort_column, sort_order], (err, results) => {
       if (err) {
-          return callback(err, null);
+        return callback(err, null);
       }
-
-      // Return the fetched results from the procedure
-      return callback(null, results[0]); // Assuming the first result set contains the desired data
-  });
-};
+    
+      return callback(null, results);
+    });
+    };
 
 const getAllEmaildetails = (req,callback) => {
   const sql = `CALL SP_MICRO_GET_DETAILS_VOLUNTER_BY_ID(?);`;  // Calling the stored procedure to get all peacekeeper data
@@ -134,27 +157,45 @@ function generateCouponCode(length) {
   
   return couponCode;
 }
-const inserting_transcation_details = (session) => {
-   const random=generateCouponCode(10);
-   console.log(random,"random");
+
+const inserting_transcation_details = async (req, session) => {
+
+  const query1 = 'CALL USP_NOMINATION_DETAILS_GET_NOMINATION_ID(?)';
   return new Promise((resolve, reject) => {
-    const query = 'CALL USP_INSERT_TRANSCATION_DETAILS(?,?,?,?,?,?)';
-    db.query(query, 
-    [
-      session.customer_email,
-      session.payment_intent,
-      session.payment_status,
-      random,
-      `https://devglobaljusticeapis.cylsys.com/uploads/ticket/photo/${random}.png`,
-      "hall address"
-    ], (error, results) => {
+    db.query(query1, [session.customer_email], (error, results) => {
       if (error) {
-        reject(error);
-      } else {
-        resolve(results[0]); // Assuming the first result contains the data
+        console.log(error,"resultserror");
+        return reject(error);
       }
+      console.log(results,"results11111111");
+      console.log(results[0][0].nominations, "nomination");
+      const random = generateCouponCode(10);
+      console.log(random, "random");
+      const nominationCode = results[0][0].nominations !== null ? `${random}-NOM` : null;
+  
+      const query = 'CALL USP_INSERT_TRANSCATION_DETAILS(?,?,?,?,?,?,?)';
+      const protocol = "https";
+  
+      db.query(query, [
+        session.customer_email,
+        session.payment_intent,
+        session.payment_status,
+        random,
+        `${protocol}://${req.get("host")}/uploads/ticket/photo/${random}.png`,
+        "hall address",
+        nominationCode
+      ], (error, results) => {
+        if (error) {
+          return reject(error);
+        } else {
+          console.log(results[0], "result");
+          resolve(results[0]); // Assuming the first result contains the data
+        }
+      });
     });
   });
+  
+
 };
 
 const getAllPeacekeepersdropdown = (callback) => {

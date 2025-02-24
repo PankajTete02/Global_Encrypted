@@ -92,7 +92,7 @@ const createPeacekeeper = (req, res) => {
     // Validate mobile number (only digits)
     if (mobile_number.trim() && !/^\+\d{1,6} \d+$/.test(mobile_number.trim())) {
       errors.push("Mobile number should start with a country code (e.g., +91), contain a space, followed by digits without spaces or special characters");
-  }
+    }
  
    
     // Validate DOB (YYYY-MM-DD format and a past date)
@@ -860,8 +860,10 @@ const update_Peacekeeper = (req, res) => {
         const qrCodeUrl = `${protocol}://${req.get("host")}/uploads/delegates/${imageName}`;
         const mailOptions = {
           from: 'Peacekeeper@global-jlp-summit.com',
-          to: `${response[0].email_id}`,  // Adjust recipient
+         to: `${response[0].email_id}`,  // Adjust recipient
           //to: "udayshimpi2000@gmail.com",
+	//to: "piyush.thakur@cylsys.com",
+	//to: "rahul.dubey@cylsys.com",
           subject: 'Here`s your Peacekeeper Badge again!',
           html: `<img src="cid:qrCodeImage" alt="QR Code" style="width: 50%; height: 50%;" />`,
           attachments: [
@@ -952,50 +954,71 @@ const getPeacekeeperData = async (req, res) => {
   }
 };
 
-const getAllPeacekeeperData = (req, res) => {
-  // Call the model function to fetch peacekeeper data
-  peacekeeperModel.getAllPeacekeepers((err, peacekeepers) => {
-    if (err) {
-      console.error("Error fetching peacekeeper data: ", err);
-      return res.status(500).json({
-        success: false,
-        error: true,
-        message: "Server error.",
-        details: err
-      });
-    }
-    console.log(peacekeepers, "peacekeepers");
-    console.log(peacekeepers[0].file_name, "file_name");
-    console.log(peacekeepers.length, "length");
+const getAllPeacekeeperData = async (req, res) => {
+  try {
+    const auth = await VerifyToken(req, res);
+    console.log("Auth verified:", auth);
 
-    for (let i = 0; i < peacekeepers.length; i++) {
-      const imageFileNames = peacekeepers[i].file_name;
-      const protocol = "https";
-      const basePath = `${protocol}://${req.get("host")}/uploads`;
-      const imagePaths = imageFileNames
-        ? imageFileNames
-          .split(", ")
-          .map((fileName) => `${basePath}/${fileName.trim()}`)
-        : [];
-      console.log("Image Paths:", imagePaths);
-      peacekeepers[i].file_name = imagePaths;
-      console.log(i)
-    }
-    // If data is successfully fetched, return it in the response
-    return res.status(200).json({
-      success: true,
-      error: false,
-      data: peacekeepers,
-      message: "Peacekeeper data fetched successfully."
+    // Ensure the callback function is correctly passed
+    peacekeeperModel.getAllPeacekeepers(req, auth, (err, peacekeepers) => {
+      if (err) {
+        console.error("Error fetching peacekeeper data:", err);
+        return res.status(500).json({
+          success: false,
+          error: true,
+          message: "Server error.",
+          details: err
+        });
+      }
+
+      // console.log("Peacekeepers retrieved:", peacekeepers.Data ,  peacekeepers.totalCount);
+     let finalData =peacekeepers.Data
+     
+
+      for (let i = 0; i < finalData.length; i++) {
+        const imageFileNames = finalData[i].file_name;
+        const protocol = "https";
+        const basePath = `${protocol}://${req.get("host")}/uploads`;
+        const imagePaths = imageFileNames
+          ? imageFileNames.split(", ").map((fileName) => `${basePath}/${fileName.trim()}`)
+          : [];
+
+          finalData[i].file_name = imagePaths;
+        
+      }
+      return res.status(200).json({
+        success: true,
+        error: false,
+        peacekeepers,
+        message: "Peacekeeper data fetched successfully."
+      });
     });
-  });
+  } catch (error) {
+    console.error("Error during processing:", error);
+    return res.status(500).json({
+      success: false,
+      error: true,
+      message: "Internal Server Error.",
+      details: error
+    });
+  }
 };
 
 const getAllContactUsData = (req, res) => {
-  // Call the model function to fetch peacekeeper data
-  peacekeeperModel.getAllContactUs((err, peacekeepers) => {
+  // Extract parameters from request body
+  let { page_no, page_size, search, sort_column, sort_order } = req.body;
+
+  // Ensure valid values
+  page_no = Number(page_no) > 0 ? Number(page_no) : 1;
+  page_size = Number(page_size) > 0 ? Number(page_size) : 10;
+  search = search 
+  sort_column = sort_column 
+  sort_order = sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+  // Call the model function to fetch contact data
+  peacekeeperModel.getAllContactUs(page_no, page_size, search, sort_column, sort_order, (err, result) => {
     if (err) {
-      console.error("Error fetching peacekeeper data: ", err);
+      console.error("Error fetching contact data: ", err);
       return res.status(500).json({
         success: false,
         error: true,
@@ -1004,11 +1027,15 @@ const getAllContactUsData = (req, res) => {
       });
     }
 
-    // If data is successfully fetched, return it in the response
+    // Extract data and total count from stored procedure results
+    const contactData = result[0] || []; // First result set contains actual data
+    const totalRecords = result[1]?.[0]?.total_records || 0; // Second result set contains total records
+
     return res.status(200).json({
       success: true,
       error: false,
-      data: peacekeepers,
+      data: contactData,
+      totalCount: totalRecords,
       message: "Contact data fetched successfully."
     });
   });

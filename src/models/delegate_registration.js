@@ -94,69 +94,52 @@ Delegatedetails.create = function (details, result) {
   );
 };
 //-------------------------------------Delegate Form -------------------------------------------------------------
-Delegatedetails.findById = function (req,res, result) {
-  const { page_no, size_no } = req.body;
-  if (!page_no || !size_no || page_no <= 0 || size_no <= 0) {
-    return res.status(400).json({
-      status: false,
-      error: true,
-      message: "Invalid page number or size.",
-    });
-  }
-  // Validate input to avoid SQL injection or invalid values
-  
-
-  // Log the incoming parameters for debugging
-  console.log("Page Number:", page_no, "Page Size:", size_no);
-
-  // Execute the stored procedure with the provided parameters
+Delegatedetails.findById = function (id, result) {
+  console.log("lllllllllllllllllll", id);
   dbConn.query(
-    "CALL microsite_get_nonregistered_delegate(?, ?);",
-    [page_no, size_no],
+    "call microsite_get_nonregistered_delegate();      ",
+    id,
     function (err, res) {
       if (err) {
-        console.error("Database Error:", err);
-        result(err, null);
+        result(null, err);
       } else {
-        console.log("Query Result:", res);
-        // Check if the stored procedure returns expected results
-        if (res && res[0]) {
-          result(null, res[0]); // Return only the data rows
-        } else {
-          result(null, []);
-        }
+        result(null, res);
       }
     }
   );
 };
-
 // ====================GetAll--Approve--Delegate======
-Delegatedetails.findByApproved = function (req,res, result) {
+Delegatedetails.findByApproved = function (
+  authId,
+  page_no,
+  page_size,
+  search,
+  sort_column,
+  sort_order,
+  result
+) {
+  console.log("Fetching approved delegates for Admin ID:", authId);
 
-  const { page_no, size_no } = req.body;
-  if (!page_no || !size_no || page_no <= 0 || size_no <= 0) {
-    return res.status(400).json({
-      status: false,
-      error: true,
-      message: "Invalid page number or size.",
-    });
-  }
-  
+  // Execute stored procedure
   dbConn.query(
-    "call microsite_get_approved_delegate(?,?);",
-    [page_no, size_no],
-    function (err, res) {
+    "CALL microsite_get_approved_delegate(?,?,?,?,?,?)",
+    [page_no, page_size, authId, search, sort_column, sort_order],
+    function (err, dbRes) {
       if (err) {
         console.error("Database Error:", err);
-        result(err, null);
+        return result(err, null);
+      }
+
+      console.log("Query Result:", dbRes);
+      console.log("Query Result111:", dbRes[0]);
+
+
+      // Ensure the procedure returned results
+      if (dbRes && dbRes[0]) {
+        result(null, dbRes); // Return only the first result set (main data)
+        return dbRes
       } else {
-        console.log("Query Result:", res);
-        // Check if the stored procedure returns expected results
-        if (res && res[0]) {
-          result(null, res[0]); // Return only the data rows
-        } else {
-          result(null, []);
-        }
+        result(null, []); // Return empty array if no results found
       }
     }
   );

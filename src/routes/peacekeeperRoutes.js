@@ -7,9 +7,9 @@ router.post('/create-peacekeeper', peacekeeperController.createPeacekeeper);
 
 router.get('/peacekeeper/:id', peacekeeperController.getPeacekeeperData);
 
-router.get('/getAllpeacekeeper', peacekeeperController.getAllPeacekeeperData);
+router.post('/getAllpeacekeeper', peacekeeperController.getAllPeacekeeperData);
 
-router.get('/getAllContactUsData', peacekeeperController.getAllContactUsData);
+router.post('/getAllContactUsData', peacekeeperController.getAllContactUsData);
 
 router.post('/update_peacekeeper', peacekeeperController.update_Peacekeeper);
 
