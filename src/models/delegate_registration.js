@@ -116,14 +116,16 @@ Delegatedetails.findByApproved = function (
   search,
   sort_column,
   sort_order,
+  p_type,
+  p_reference_by,
   result
 ) {
   console.log("Fetching approved delegates for Admin ID:", authId);
 
   // Execute stored procedure
   dbConn.query(
-    "CALL microsite_get_approved_delegate(?,?,?,?,?,?)",
-    [page_no, page_size, authId, search, sort_column, sort_order],
+    "CALL microsite_get_approved_delegate(?,?,?,?,?,?,?,?)",
+    [page_no, page_size, authId, search, sort_column, sort_order,p_type,p_reference_by],
     function (err, dbRes) {
       if (err) {
         console.error("Database Error:", err);
@@ -144,6 +146,21 @@ Delegatedetails.findByApproved = function (
     }
   );
 };
+
+exports.updateUserIsActiveByTypeReference = (tu_type, tu_reference_by, is_active, resultCallback) => {
+  const query = "CALL update_user_is_active_by_type_reference(?, ?, ?)";
+  
+  sql.query(query, [tu_type, tu_reference_by, is_active], (err, res) => {
+    if (err) {
+      console.error("Error executing stored procedure: ", err);
+      resultCallback(err, null);
+      return;
+    }
+    // Stored procedure returns the result set(s). Assuming the first result set contains updated_rows.
+    resultCallback(null, res[0]);
+  });
+};
+
 //-------------------------------------------Partner Form --------------------------------------------------------------------------
 
 Delegatedetails.findByPartner = function (id, result) {

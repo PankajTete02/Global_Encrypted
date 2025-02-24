@@ -7,6 +7,9 @@ const notification = require("../../middlewares/email")
 const fs = require('fs');
 const path = require('path');
 const { log, count } = require("console");
+
+const {VerifyToken} =require('../middleware/auth');
+
 exports.Delegatedetails = async function (req, res) {
   const new_details = new Delegatedetails(req.body);
   userEmail = req.body.email_id;
@@ -151,7 +154,7 @@ exports.findByApproved = async function (req, res) {
     console.log("Authenticated User ID:", authId);
 
     // Extract parameters from request body
-    const { page_no, page_size, search, sort_column, sort_order } = req.body;
+    const { page_no, page_size, search, sort_column, sort_order,p_type,p_reference_by} = req.body;
     console.log(req.body,"req.body");
     
     // Call the model function
@@ -162,6 +165,8 @@ exports.findByApproved = async function (req, res) {
       search,
       sort_column,
       sort_order,
+      p_type,
+      p_reference_by,
       function (err, data) {
         if (err) {
           console.error("Database Error:", err);
@@ -192,6 +197,24 @@ exports.findByApproved = async function (req, res) {
       message: "Internal Server Error. Please try again.",
     });
   }
+};
+
+
+exports.updateByTypeReference = (req, res) => {
+  const { tu_type, tu_reference_by, is_active } = req.body;
+  
+  // Validate required fields
+  if (tu_type == null || tu_reference_by == null || is_active == null) {
+    return res.status(400).json({ error: "tu_type, tu_reference_by and is_active are required." });
+  }
+
+  // Call the model method
+  delegateModel.updateUserIsActiveByTypeReference(tu_type, tu_reference_by, is_active, (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message || "Some error occurred while updating user status." });
+    }
+    res.json(result);
+  });
 };
 
 

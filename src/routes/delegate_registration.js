@@ -11,6 +11,8 @@ router.post("/create", delegate_registration.Delegatedetails);
 // // Get All Non-Registered & Approved Data in Delegate Form
 router.post("/delegate/non-registered", delegate_registration.findById);
 router.post("/delegate/approved", delegate_registration.findByApproved);
+router.put("/update/delegate/byTypeReference", delegate_registration.updateByTypeReference);
+
 
 // // Get All Non-Registered & Approved Data in Partner Form
 router.get("/partner/non-registered", delegate_registration.findByPartner);

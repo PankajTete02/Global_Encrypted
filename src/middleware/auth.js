@@ -56,6 +56,7 @@ async function encrypt(jsonObject) {
 }
 
 async function decrypt(encryptedData) {
+  
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedData, process.env.ENCRYPTION_KEY);
     const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
