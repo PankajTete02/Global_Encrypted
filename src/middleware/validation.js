@@ -22,11 +22,9 @@ const sponsorshipSchema = Joi.object({
 
   sponsorship_name: Joi.string()
     .trim()
-    .pattern(namePattern)
     .required()
     .messages({
-      "any.required": "Sponsorship name is required.",
-      "string.pattern.base": "Sponsorship name must be alphanumeric and up to 50 characters.",
+      "any.required": "Sponsorship name is required."
     }),
 
   poc_name: Joi.string()

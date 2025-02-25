@@ -147,10 +147,10 @@ Delegatedetails.findByApproved = function (
   );
 };
 
-exports.updateUserIsActiveByTypeReference = (tu_type, tu_reference_by, is_active, resultCallback) => {
+Delegatedetails.updateUserIsActiveByTypeReference = (tu_type, tu_reference_by, is_active, resultCallback) => {
   const query = "CALL update_user_is_active_by_type_reference(?, ?, ?)";
   
-  sql.query(query, [tu_type, tu_reference_by, is_active], (err, res) => {
+  dbConn.query(query, [tu_type, tu_reference_by, is_active], (err, res) => {
     if (err) {
       console.error("Error executing stored procedure: ", err);
       resultCallback(err, null);

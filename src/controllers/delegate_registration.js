@@ -209,7 +209,7 @@ exports.updateByTypeReference = (req, res) => {
   }
 
   // Call the model method
-  delegateModel.updateUserIsActiveByTypeReference(tu_type, tu_reference_by, is_active, (err, result) => {
+  Delegatedetails.updateUserIsActiveByTypeReference(tu_type, tu_reference_by, is_active, (err, result) => {
     if (err) {
       return res.status(500).json({ error: err.message || "Some error occurred while updating user status." });
     }
