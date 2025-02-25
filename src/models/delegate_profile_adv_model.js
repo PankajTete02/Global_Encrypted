@@ -1,5 +1,6 @@
 const { check } = require('express-validator');
 const pool = require('../../db.config');
+const { search } = require('../routes/delegateProfileRoute');
 
 
 const bulk_delegate_insert = (req, delegateData, callback) => {
@@ -102,9 +103,59 @@ const insert_sponsered_transcation_details = (req,data) => {
         });
     }
     catch (error) {
-
+        return res.status(500).json({ success: false, error: true, message: error.message });
     }
 };
 
+const get_all_speaker_list =(req,res)=>{
+    try {
+        console.log(req.body,"req_body");
+        return new Promise((resolve, reject) => {
+            const query = 'CALL USP_GET_SPEAKER_LIST(?,?,?)';
+           
+            pool.query(query, [
+                req.body.p_search,
+                req.body.p_limit,
+                req.body.p_type
+            ], (error, results) => {
+                if (error) {
+                    return reject(error);
+                } else {
+                    console.log(results[0], "result");
+                    resolve(results[0]); // Assuming the first result contains the data
+                }
+            });
+        });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: true, message: error.message });
+    }
+};
 
-module.exports = { bulk_delegate_insert, insert_sponsered_transcation_details };
+const sample_delegate_online =(req,res)=>{
+    try {
+        console.log(req.body,"req_body");
+        return new Promise((resolve, reject) => {
+            const query = 'CALL USP_INSERT_ONLINE_DELEGATE_DETAILS(?,?,?,?)';
+           
+            pool.query(query, [
+                req.body.name,
+                req.body.email,
+                req.body.mobile_no,
+                "DELEGATE_ONLINE"
+            ], (error, results) => {
+                if (error) {
+                    return reject(error);
+                } else {
+                    console.log(results[0], "result");
+                    resolve(results[0]); // Assuming the first result contains the data
+                }
+            });
+        });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: true, message: error.message });
+    }
+}
+
+module.exports = { bulk_delegate_insert, insert_sponsered_transcation_details,get_all_speaker_list,sample_delegate_online };
