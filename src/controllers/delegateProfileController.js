@@ -1,5 +1,6 @@
 ﻿const nodemailer = require('nodemailer');
 const delegateProfileModel = require('../models/delegateProfileModel');
+const {insertDelegateProfiles} = require('../models/delegateProfileModel');
 const path = require('path');
 const fs = require('fs');
 const qrcode = require('qrcode');
@@ -1270,7 +1271,6 @@ const createDelegateProfile = (req, res) => {
       });
 
      
-
       const mailOptions = {
         from: 'Peacekeeper@global-jlp-summit.com',
         to: email_id,
@@ -1322,6 +1322,128 @@ function logError(error) {
   });
 
 }
+
+const createDelegateProfiles = async (req, res) => {
+  const delegateProfiles = req.body.delegateForms; // Assuming delegates are sent as an array
+
+  const requiredFields = [
+    "title", "firstName", "lastName", "mobileNo", "email",
+    "dob", "profession1", "country", "city", "purpose", "levers", "p_type"
+  ];
+
+  const errors = [];
+
+  delegateProfiles.forEach((delegate, index) => {
+    requiredFields.forEach(field => {
+      if (!delegate[field]) {
+        errors.push(`Delegate at index ${index} missing required field: ${field}`);
+      }
+    });
+
+    if (delegate.mobile_number && !/^\d+$/.test(delegate.mobile_number)) {
+      errors.push(`Delegate at index ${index} has an invalid mobile_number`);
+    }
+
+    if (delegate.dob) {
+      const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dobRegex.test(delegate.dob)) {
+        errors.push(`Delegate at index ${index} has an invalid dob format (YYYY-MM-DD)`);
+      } else {
+        const dobDate = new Date(delegate.dob);
+        const today = new Date();
+        if (dobDate >= today) {
+          errors.push(`Delegate at index ${index} has a dob in the future`);
+        }
+      }
+    }
+  });
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      error: true,
+      message: errors.join(', '), // Return all errors in a single message
+    });
+  }
+
+  const delegateData = delegateProfiles.map((delegate) => ({
+    title: delegate.title,
+    first_name: delegate.firstName,
+    last_name: delegate.lastName,
+    mobile_number: delegate.mobileNo,
+    email_id: delegate.email,
+    dob: delegate.dob,
+    profession_1: delegate.profession1,
+    profession_2: delegate.profession2,
+    website: delegate.website,
+    organization_name: delegate.organization,
+    address: delegate.address,
+    country: delegate.country,
+    state: delegate.state,
+    city: delegate.city,
+    pin_code: "",
+    attendee_purpose: delegate.purpose,
+    conference_lever_interest: JSON.stringify(delegate.levers),
+    created_by: delegate.created_by,
+    status: delegate.status,
+    passport_no: delegate.passport_no,
+    passport_issue_by: delegate.passport_issue_by,
+    tu_type: delegate.p_type,
+    tu_reference_by: delegate.p_reference_by,
+    linkedIn_profile: delegate.linkedIn,
+    instagram_profile: delegate.instagram,
+  }));
+
+  try {
+    // Pass a callback to the insertDelegateProfiles function
+    insertDelegateProfiles(req, delegateData, (err, response) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          error: true,
+          message: "Server error.",
+          details: err,
+        });
+      }
+
+      if (response.response === "fail1") {
+        return res.status(400).json({
+          success: false,
+          error: true,
+          message: "Delegate profile insertion failed due to existing data.",
+        });
+      }
+
+      if (response.response === "error") {
+        return res.status(500).json({
+          success: false,
+          error: true,
+          message: "Error in delegate profile insertion.",
+          details: response,
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        error: false,
+        message: "Delegate profiles registered successfully",
+        response: response
+      });
+
+    });
+  } catch (err) {
+    console.error("Error during bulk insertion process:", err);
+    return res.status(500).json({
+      success: false,
+      error: true,
+      message: "Server error during bulk insertion.",
+      details: err,
+    });
+  }
+};
+
+
+
 
 const createDelegateProfile_whatapp = (req, res) => {
   const {
@@ -4119,6 +4241,7 @@ catch(error)
 };
 module.exports = {
     createDelegateProfile,
+    createDelegateProfiles,
     verify_session_status,
     download_badge,
     createNominateProfile,

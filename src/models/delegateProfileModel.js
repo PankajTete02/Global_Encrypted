@@ -77,6 +77,54 @@ const insertDelegateProfile = (req, delegateData, callback) => {
   });
 };
 
+const insertDelegateProfiles = (req, delegateData, callback) => {
+  console.log("Delegate Data:", JSON.stringify(delegateData));
+
+  const sql = `CALL SP_INSERT_DELEGATE_PROFILE_BULK(?)`;
+
+  pool.query(sql, [JSON.stringify(delegateData)], (err, results) => {
+    if (err) {
+      console.error("Error in bulk insert:", err);
+      return callback({
+        message: "Server error during bulk insert.",
+        details: err,
+      }, null); // Return a more descriptive error message
+    }
+
+    const response = results[0][0]; 
+
+    // Handle various response scenarios
+    if (response.response === "fail") {
+      return callback(null, {
+        success: false,
+        error: true,
+        message: "Delegate profile insertion failed. Please check the data and try again."
+      });
+    } else if (response.response === "fail1") {
+      return callback(null, {
+        success: false,
+        error: true,
+        message: "Duplicate data: Email or mobile number already exists in the system."
+      });
+    } else if (response.response === "success") {
+      return callback(null, {
+        success: true,
+        error: false,
+        message: "Delegate profiles inserted successfully.",
+        ids: response.delegate_ids // Returning the delegate IDs if available
+      });
+    } else {
+      return callback(null, {
+        success: false,
+        error: true,
+        message: `Unexpected error occurred during insertion. Response: ${JSON.stringify(response)}`
+      });
+    }
+  });
+};
+
+
+
 const download_badge = async (req, res) => {
     try {
       console.log("B"); 
@@ -147,6 +195,7 @@ const download_badge = async (req, res) => {
 
 module.exports = {
     insertDelegateProfile,
+    insertDelegateProfiles,
     download_badge,
     insert_nomination,
     get_nomination_details
